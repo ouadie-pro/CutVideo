@@ -54,6 +54,78 @@ function checkYtDlp() {
   return ytDlpAvailable;
 }
 
+function getYtDlpVersionString() {
+  try {
+    const cmd = ytDlpExecPath || (process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
+    return execSync(`"${cmd}" --version`, { encoding: 'utf-8', timeout: 5000 }).trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
+function checkNodeJsRuntime() {
+  try {
+    execSync('node --version', { stdio: 'pipe', timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function parseYtDlpErrors(stderr) {
+  const patterns = [
+    { pattern: /HTTP Error 403/i, message: 'Access forbidden (HTTP 403). The video may be restricted.' },
+    { pattern: /HTTP Error 429/i, message: 'Too many requests (HTTP 429). Please wait before trying again.' },
+    { pattern: /HTTP Error 4\d{2}/i, message: 'HTTP request failed. The video may be unavailable.' },
+    { pattern: /Sign in to confirm your age/i, message: 'This video is age-restricted and cannot be downloaded.' },
+    { pattern: /age-?restricted/i, message: 'This video is age-restricted and cannot be downloaded.' },
+    { pattern: /private video/i, message: 'This video is private.' },
+    { pattern: /[Uu]navailable/i, message: 'This video is unavailable.' },
+    { pattern: /[Gg]eo[ -]?restricted/i, message: 'This video is geo-restricted and not available in your region.' },
+    { pattern: /not available in your country/i, message: 'This video is geo-restricted and not available in your region.' },
+    { pattern: /[js]c.*challenge.*(failed|skip)/i, message: 'YouTube JavaScript challenge could not be solved. Try updating yt-dlp.' },
+    { pattern: /signature extraction failed/i, message: 'Failed to extract video signature. Try updating yt-dlp.' },
+    { pattern: /is live/i, message: 'This video is a live stream. Partial clip downloads are not supported for live content.' },
+    { pattern: /requested format is not available/i, message: 'The requested video quality is not available for this video.' }
+  ];
+  for (const { pattern, message } of patterns) {
+    if (pattern.test(stderr)) {
+      return message;
+    }
+  }
+  return null;
+}
+
+function resolveFfmpegPath() {
+  try {
+    const ffmpegPath = require('ffmpeg-static');
+    const exists = ffmpegPath && fs.existsSync(ffmpegPath);
+
+    if (ffmpegPath) {
+      const stat = fs.statSync(ffmpegPath);
+      console.log('FFmpeg detection:');
+      console.log(`  path: ${ffmpegPath}`);
+      console.log(`  exists: ${exists}`);
+      console.log(`  size: ${stat.size}`);
+      console.log(`  isFile: ${stat.isFile()}`);
+    }
+
+    if (!ffmpegPath || !exists) {
+      console.log('FFmpeg detection: binary not found at', ffmpegPath);
+      return null;
+    }
+
+    console.log(`  --ffmpeg-location value: ${ffmpegPath}`);
+    return ffmpegPath;
+  } catch (error) {
+    if (error.code === 'MODULE_NOT_FOUND') {
+      console.log('FFmpeg detection: ffmpeg-static module not found');
+      return null;
+    }
+    throw error;
+  }
+}
+
 async function getVideoInfo(url) {
   if (checkYtDlp()) {
     return getInfoWithYtDlp(url);
@@ -62,48 +134,78 @@ async function getVideoInfo(url) {
 }
 
 async function getInfoWithYtDlp(url) {
-  try {
+  return new Promise((resolve, reject) => {
     checkYtDlp();
     const cmd = ytDlpExecPath || (process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
-    let infoArgs = `--dump-json --no-playlist --skip-download --js-runtimes node`;
-    try {
-      const ffmpegPath = require('ffmpeg-static');
-      if (ffmpegPath) {
-        infoArgs += ` --ffmpeg-location "${path.dirname(ffmpegPath)}"`;
+
+    const hasNode = checkNodeJsRuntime();
+    const jsRuntimeArgs = hasNode ? ['--js-runtimes', 'node'] : [];
+
+    const args = [
+      '--dump-json',
+      '--no-playlist',
+      '--skip-download',
+      '--extractor-retries', '3',
+      ...jsRuntimeArgs,
+      url
+    ];
+
+    const ffmpegPath = resolveFfmpegPath();
+    if (ffmpegPath) {
+      args.push('--ffmpeg-location', ffmpegPath);
+    }
+
+    console.log(`Executing: "${cmd}" ${args.join(' ')}`);
+
+    const proc = spawn(cmd, args);
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout.on('data', (data) => { stdout += data.toString(); });
+    proc.stderr.on('data', (data) => { stderr += data.toString(); });
+
+    proc.on('close', (code) => {
+      if (stderr.trim()) {
+        console.warn(`yt-dlp stderr (getInfo): ${stderr.trim()}`);
       }
-    } catch {}
-    const output = execSync(
-      `"${cmd}" ${infoArgs} "${url}"`,
-      { maxBuffer: 10 * 1024 * 1024, timeout: 30000, encoding: 'utf-8' }
-    );
 
-    const data = JSON.parse(output);
+      if (code !== 0 || !stdout) {
+        const friendlyError = parseYtDlpErrors(stderr);
+        const errMsg = (stderr || stdout || 'Unknown error').slice(0, 500).trim();
+        reject(new Error(friendlyError || `Failed to get video info: ${errMsg}`));
+        return;
+      }
 
-    const formats = (data.formats || []).map(f => ({
-      height: f.height,
-      format_id: f.format_id,
-      ext: f.ext,
-      vcodec: f.vcodec,
-      acodec: f.acodec,
-      filesize: f.filesize
-    }));
+      try {
+        const data = JSON.parse(stdout);
 
-    return {
-      title: data.title || 'Unknown',
-      duration: data.duration || 0,
-      thumbnail: data.thumbnail || '',
-      author: data.uploader || data.uploader_id || data.channel || 'Unknown',
-      formats
-    };
-  } catch (error) {
-    if (error.message.includes('private')) {
-      throw new Error('Private video');
-    }
-    if (error.message.includes('unavailable') || error.message.includes('not found')) {
-      throw new Error('This video is unavailable');
-    }
-    throw new Error(`Failed to get video info: ${error.message}`);
-  }
+        const formats = (data.formats || []).map(f => ({
+          height: f.height,
+          format_id: f.format_id,
+          ext: f.ext,
+          vcodec: f.vcodec,
+          acodec: f.acodec,
+          filesize: f.filesize
+        }));
+
+        resolve({
+          title: data.title || 'Unknown',
+          duration: data.duration || 0,
+          thumbnail: data.thumbnail || '',
+          author: data.uploader || data.uploader_id || data.channel || 'Unknown',
+          formats,
+          isLive: !!data.is_live,
+          wasLive: !!data.was_live
+        });
+      } catch (parseError) {
+        reject(new Error('Failed to parse video info from yt-dlp output'));
+      }
+    });
+
+    proc.on('error', (err) => {
+      reject(new Error(`yt-dlp error: ${err.message}`));
+    });
+  });
 }
 
 async function getInfoWithYtdlCore(url) {
@@ -154,27 +256,67 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
       ? `bestvideo[height<=${height}]+bestaudio/best[height<=${height}]`
       : 'best';
 
+    const hasNode = checkNodeJsRuntime();
+    const jsRuntimeArgs = hasNode ? ['--js-runtimes', 'node'] : [];
+
     const args = [
       '-f', formatStr,
       '-o', outputPath,
       '--no-playlist',
       '--merge-output-format', 'mp4',
-      '--js-runtimes', 'node',
+      '--extractor-retries', '3',
       '--newline',
+      '--progress',
+      '--no-color',
+      '--progress-template', 'download:%(progress.status)s - %(progress.downloaded_bytes)s/%(progress.total_bytes)s - %(progress.percent)s',
+      ...jsRuntimeArgs,
       url
     ];
 
-    let ffmpegPath = null;
-    try {
-      ffmpegPath = require('ffmpeg-static');
-      if (ffmpegPath) {
-        args.push('--ffmpeg-location', path.dirname(ffmpegPath));
-      }
-    } catch {}
+    const ffmpegPath = resolveFfmpegPath();
+    if (ffmpegPath) {
+      args.push('--ffmpeg-location', ffmpegPath);
+    } else {
+      const err = new Error('FFmpeg not found. The project requires FFmpeg for video processing. Please ensure ffmpeg-static is properly installed.');
+      console.error(err.message);
+      return reject(err);
+    }
 
-    const proc = spawn(cmd, args);
+    if (startTime && endTime) {
+      try {
+        const infoOutput = execSync(
+          `"${cmd}" --dump-json --no-playlist --skip-download ${jsRuntimeArgs.length ? '--js-runtimes node' : ''} "${url}"`,
+          { maxBuffer: 1024 * 1024, timeout: 15000, encoding: 'utf-8' }
+        );
+        const info = JSON.parse(infoOutput);
+        if (info.is_live || info.was_live) {
+          console.log(`Live stream detected for ${url}, skipping --download-sections`);
+        } else {
+          args.push('--download-sections', `*${startTime}-${endTime}`);
+        }
+      } catch (e) {
+        console.warn(`Could not check video type for --download-sections: ${e.message}`);
+      }
+    }
+
+    console.log(`Executing: "${cmd}" ${args.join(' ')}`);
+
+    const env = {
+      ...process.env,
+      PYTHONUNBUFFERED: '1',
+      PYTHONIOENCODING: 'utf-8'
+    };
+
+    const proc = spawn(cmd, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+      env: env,
+      shell: false
+    });
     let stderr = '';
     let stdout = '';
+    let stdoutBuffer = '';
+    let stderrBuffer = '';
     let timeoutTimer = null;
 
     // Set a timeout to prevent hanging
@@ -185,30 +327,66 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
 
     proc.stdout.on('data', (data) => {
       const text = data.toString();
+      console.log('[yt-dlp stdout chunk]:', text);
       stdout += text;
+      stdoutBuffer += text;
 
-      const match = text.match(/(\d+\.?\d*)%/);
-      if (match && onProgress) {
-        onProgress(parseFloat(match[1]));
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop();
+
+      for (const line of lines) {
+        // Try to match the new progress-template format first
+        let match = line.match(/download:.*? - (\d+\.?\d*)%/);
+        // Fallback to the old format
+        if (!match) {
+          match = line.match(/\[download\]\s+(\d+\.?\d*)%/);
+        }
+        if (match && onProgress) {
+          console.log('[yt-dlp stdout progress]:', match[1]);
+          onProgress(parseFloat(match[1]));
+        }
       }
     });
 
     proc.stderr.on('data', (data) => {
       const text = data.toString();
+      console.log('[yt-dlp stderr chunk]:', text);
       stderr += text;
+      stderrBuffer += text;
 
-      const match = text.match(/(\d+\.?\d*)%/);
-      if (match && onProgress) {
-        onProgress(parseFloat(match[1]));
+      const lines = stderrBuffer.split('\n');
+      stderrBuffer = lines.pop();
+
+      for (const line of lines) {
+        // Try to match the new progress-template format first
+        let match = line.match(/download:.*? - (\d+\.?\d*)%/);
+        // Fallback to the old format
+        if (!match) {
+          match = line.match(/\[download\]\s+(\d+\.?\d*)%/);
+        }
+        if (match && onProgress) {
+          console.log('[yt-dlp stderr progress]:', match[1]);
+          onProgress(parseFloat(match[1]));
+        }
       }
     });
 
     proc.on('close', (code) => {
       clearTimeout(timeoutTimer);
+
+      if (stderr.trim()) {
+        if (code === 0) {
+          console.warn(`yt-dlp warnings for ${url}: ${stderr.trim()}`);
+        } else {
+          console.error(`yt-dlp errors for ${url}: ${stderr.trim()}`);
+        }
+      }
+
       if (code === 0 && fs.existsSync(outputPath)) {
         resolve(outputPath);
       } else {
-        const errMsg = (stderr + stdout).slice(-500).trim();
+        const friendlyError = parseYtDlpErrors(stderr);
+        const errMsg = friendlyError || (stderr + stdout).slice(-500).trim();
         reject(new Error(errMsg || `Download failed with exit code ${code}`));
       }
     });
