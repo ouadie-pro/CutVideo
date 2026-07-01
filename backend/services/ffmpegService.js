@@ -1,7 +1,11 @@
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static').path;
 if (ffmpegPath) {
   ffmpeg.setFfmpegPath(ffmpegPath);
+}
+if (ffprobePath) {
+  ffmpeg.setFfprobePath(ffprobePath);
 }
 
 function trimVideo(inputPath, outputPath, start, end, onProgress) {

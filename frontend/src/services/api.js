@@ -31,4 +31,28 @@ export async function downloadCutFile(jobId, onProgress) {
   return response;
 }
 
+export async function startReelsJob(url, count, duration, quality) {
+  const { data } = await api.post('/reels/generate', { url, count, duration, quality });
+  return data;
+}
+
+export async function getReelsStatus(jobId) {
+  const { data } = await api.get(`/reels/status/${jobId}`);
+  return data;
+}
+
+export async function downloadReelFile(jobId, index) {
+  const response = await api.get(`/reels/download/${jobId}/${index}`, {
+    responseType: 'blob'
+  });
+  return response;
+}
+
+export async function downloadAllReels(jobId) {
+  const response = await api.get(`/reels/download/${jobId}`, {
+    responseType: 'blob'
+  });
+  return response;
+}
+
 export default api;

@@ -6,8 +6,10 @@ import QualitySelector from '../components/QualitySelector';
 import DownloadButton from '../components/DownloadButton';
 import ErrorAlert from '../components/ErrorAlert';
 import RecentDownloads from '../components/RecentDownloads';
+import ReelsGenerator from '../components/ReelsGenerator';
 import { useVideoAnalyzer } from '../hooks/useVideoAnalyzer';
 import { useVideoDownloader } from '../hooks/useVideoDownloader';
+import { useReelsGenerator } from '../hooks/useReelsGenerator';
 import './Home.css';
 
 function formatTime(seconds) {
@@ -20,6 +22,7 @@ function formatTime(seconds) {
 export default function Home() {
   const { analyze, loading, videoInfo, error: analyzeError, setError: setAnalyzeError, reset } = useVideoAnalyzer();
   const downloader = useVideoDownloader();
+  const reelsGenerator = useReelsGenerator();
   const [url, setUrl] = useState('');
   const [startTime, setStartTime] = useState('00:00:00');
   const [endTime, setEndTime] = useState('00:00:10');
@@ -105,6 +108,12 @@ export default function Home() {
                 success={downloader.success}
               />
             </div>
+
+            <ReelsGenerator
+              url={url}
+              quality={quality}
+              generator={reelsGenerator}
+            />
           </div>
         )}
 

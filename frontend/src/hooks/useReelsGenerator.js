@@ -1,0 +1,156 @@
+import { useState, useCallback, useRef } from 'react';
+import { startReelsJob, getReelsStatus, downloadReelFile, downloadAllReels } from '../services/api';
+
+const stepMap = {
+  'downloading': 'Analyzing...',
+  'analyzing video': 'Finding highlights...',
+  'compressing': 'Compressing...',
+  'finished': 'Finished.',
+};
+
+function mapStep(backendStep) {
+  if (!backendStep) return 'Processing...';
+  if (backendStep.startsWith('creating reel')) {
+    const parts = backendStep.split(' ');
+    const idx = parts[2];
+    const total = parts[3] ? parts[3].split('/')[1] : '';
+    return `Generating reel ${idx}/${total}...`;
+  }
+  return stepMap[backendStep] || backendStep;
+}
+
+export function useReelsGenerator() {
+  const [state, setState] = useState('idle');
+  const [progress, setProgress] = useState(0);
+  const [step, setStep] = useState('');
+  const [error, setError] = useState(null);
+  const [reels, setReels] = useState([]);
+  const [hasZip, setHasZip] = useState(false);
+  const [jobId, setJobId] = useState(null);
+  const pollingRef = useRef(null);
+  const abortRef = useRef(false);
+
+  const generate = useCallback(async (url, count, reelDuration, quality) => {
+    setState('generating');
+    setProgress(0);
+    setError(null);
+    setReels([]);
+    setHasZip(false);
+    setJobId(null);
+    setStep('Analyzing...');
+    abortRef.current = false;
+
+    try {
+      const result = await startReelsJob(url, count, reelDuration, quality);
+      const id = result.jobId;
+      setJobId(id);
+      if (abortRef.current) return;
+
+      const status = await pollStatus(id);
+      if (abortRef.current) return;
+
+      setReels(status.reels || []);
+      setHasZip(status.hasZip);
+      setProgress(100);
+      setStep('Finished.');
+      setState('complete');
+    } catch (err) {
+      if (abortRef.current) return;
+      const message = err.response?.data?.error || 'Reels generation failed. Please try again.';
+      setError(message);
+      setState('error');
+    }
+  }, []);
+
+  async function pollStatus(id) {
+    return new Promise((resolve, reject) => {
+      const poll = async () => {
+        try {
+          const status = await getReelsStatus(id);
+          setProgress(status.progress);
+          setStep(mapStep(status.step));
+
+          if (status.status === 'ready') {
+            resolve(status);
+          } else if (status.status === 'error') {
+            reject(new Error(status.error || 'Generation failed'));
+          } else if (abortRef.current) {
+            reject(new Error('Cancelled'));
+          } else {
+            pollingRef.current = setTimeout(poll, 500);
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+      poll();
+    });
+  }
+
+  const downloadOne = useCallback(async (id, index) => {
+    try {
+      const response = await downloadReelFile(id, index);
+      const blob = response.data;
+      const contentDisposition = response.headers?.['content-disposition'];
+      let filename = `reel_${index}.mp4`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+?)"?$/);
+        if (match) filename = match[1];
+      }
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Reel download failed:', err);
+    }
+  }, []);
+
+  const downloadAll = useCallback(async (id) => {
+    try {
+      const response = await downloadAllReels(id);
+      const blob = response.data;
+      const contentDisposition = response.headers?.['content-disposition'];
+      let filename = `reels_${id}.zip`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+?)"?$/);
+        if (match) filename = match[1];
+      }
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download all failed:', err);
+    }
+  }, []);
+
+  const cancel = useCallback(() => {
+    abortRef.current = true;
+    if (pollingRef.current) {
+      clearTimeout(pollingRef.current);
+      pollingRef.current = null;
+    }
+    setState('idle');
+    setProgress(0);
+    setStep('');
+    setReels([]);
+    setHasZip(false);
+    setJobId(null);
+  }, []);
+
+  const reset = useCallback(() => {
+    cancel();
+    setError(null);
+  }, [cancel]);
+
+  return { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, reels, hasZip, jobId, setError };
+}
