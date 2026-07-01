@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { startReelsJob, getReelsStatus, downloadReelFile, downloadAllReels } from '../services/api';
 
 const stepMap = {
-  'downloading': 'Analyzing...',
+  'downloading': 'Downloading...',
   'analyzing video': 'Finding highlights...',
   'compressing': 'Compressing...',
   'finished': 'Finished.',
@@ -24,20 +24,32 @@ export function useReelsGenerator() {
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState('');
   const [error, setError] = useState(null);
+  const [errorDetails, setErrorDetails] = useState(null);
   const [reels, setReels] = useState([]);
   const [hasZip, setHasZip] = useState(false);
   const [jobId, setJobId] = useState(null);
   const pollingRef = useRef(null);
   const abortRef = useRef(false);
 
+  useEffect(() => {
+    return () => {
+      abortRef.current = true;
+      if (pollingRef.current) {
+        clearTimeout(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, []);
+
   const generate = useCallback(async (url, count, reelDuration, quality) => {
     setState('generating');
     setProgress(0);
     setError(null);
+    setErrorDetails(null);
     setReels([]);
     setHasZip(false);
     setJobId(null);
-    setStep('Analyzing...');
+    setStep('Downloading...');
     abortRef.current = false;
 
     try {
@@ -56,8 +68,12 @@ export function useReelsGenerator() {
       setState('complete');
     } catch (err) {
       if (abortRef.current) return;
-      const message = err.response?.data?.error || 'Reels generation failed. Please try again.';
+      const data = err.response?.data;
+      const message = data?.error || data?.message || 'Reels generation failed. Please try again.';
       setError(message);
+      if (data?.errorDetails) {
+        setErrorDetails(data.errorDetails);
+      }
       setState('error');
     }
   }, []);
@@ -73,7 +89,8 @@ export function useReelsGenerator() {
           if (status.status === 'ready') {
             resolve(status);
           } else if (status.status === 'error') {
-            reject(new Error(status.error || 'Generation failed'));
+            const errMsg = status.errorDetails?.message || status.error || 'Generation failed';
+            reject(new Error(errMsg));
           } else if (abortRef.current) {
             reject(new Error('Cancelled'));
           } else {
@@ -150,7 +167,9 @@ export function useReelsGenerator() {
   const reset = useCallback(() => {
     cancel();
     setError(null);
+    setErrorDetails(null);
   }, [cancel]);
 
-  return { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, reels, hasZip, jobId, setError };
+  return { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, errorDetails, reels, hasZip, jobId, setError };
 }
+

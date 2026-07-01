@@ -1,5 +1,6 @@
 const youtubeService = require('../services/youtubeService');
 const reelsService = require('../services/reelsService');
+require('../services/ffmpegService');
 const { validateYouTubeUrl } = require('../utils/validators');
 const { cleanupFile, cleanupDirectory } = require('../utils/cleanup');
 const path = require('path');
@@ -34,6 +35,7 @@ exports.generate = async (req, res, next) => {
       progress: 0,
       step: 'preparing',
       error: null,
+      errorDetails: null,
       reels: [],
       zipPath: null,
       outputDir,
@@ -70,10 +72,12 @@ exports.getStatus = (req, res) => {
     progress: job.progress,
     step: job.step,
     error: job.error,
+    errorDetails: job.errorDetails,
     reels: job.reels.map(r => ({
       index: r.index,
       filename: r.filename,
-      startTime: r.startTime
+      startTime: r.startTime,
+      hasThumbnail: !!r.thumbnail
     })),
     hasZip: !!job.zipPath
   });
@@ -84,7 +88,7 @@ exports.getThumbnail = (req, res) => {
   if (!job) return res.status(404).json({ error: 'Job not found' });
   const index = parseInt(req.params.index);
   const reel = job.reels.find(r => r.index === index);
-  if (!reel || !fs.existsSync(reel.thumbnail)) {
+  if (!reel || !reel.thumbnail || !fs.existsSync(reel.thumbnail)) {
     return res.status(404).json({ error: 'Thumbnail not found' });
   }
   res.sendFile(reel.thumbnail);
@@ -154,11 +158,15 @@ async function processJob(jobId) {
     job.step = 'downloading';
 
     await youtubeService.downloadVideo(job.url, job.quality, videoPath, (pct) => {
-      job.progress = Math.round(pct * 0.25);
+      job.progress = Math.round(pct * 0.20);
     });
 
+    if (!fs.existsSync(videoPath)) {
+      throw new Error(`Downloaded video not found: ${videoPath}`);
+    }
+
     console.log(`Reels job ${jobId}: Starting highlight detection`);
-    job.progress = 25;
+    job.progress = 20;
     job.step = 'analyzing video';
 
     const reels = await reelsService.generateReels({
@@ -168,23 +176,35 @@ async function processJob(jobId) {
       reelDuration: job.duration,
       jobId: job.id,
       onProgress: (pct, step) => {
-        job.progress = 25 + Math.round(pct * 0.70);
+        job.progress = 20 + Math.round(pct * 0.70);
         job.step = step;
       }
     });
 
     job.reels = reels;
 
-    if (reels.length > 1) {
-      console.log(`Reels job ${jobId}: Creating ZIP`);
-      job.progress = 95;
-      job.step = 'compressing';
-      const zipPath = path.join(job.outputDir, `reels_${job.id}.zip`);
-      await reelsService.packageAsZip(reels, zipPath);
-      job.zipPath = zipPath;
+    for (const reel of reels) {
+      if (!fs.existsSync(reel.path)) {
+        console.error(`Reel ${reel.index} missing at ${reel.path}`);
+      }
     }
 
-    console.log(`Reels job ${jobId}: Complete`);
+    if (reels.length > 1) {
+      try {
+        console.log(`Reels job ${jobId}: Creating ZIP`);
+        job.progress = 90;
+        job.step = 'compressing';
+        const zipPath = path.join(job.outputDir, `reels_${job.id}.zip`);
+        await reelsService.packageAsZip(reels, zipPath);
+        if (fs.existsSync(zipPath)) {
+          job.zipPath = zipPath;
+        }
+      } catch (zipErr) {
+        console.error(`Reels job ${jobId}: ZIP creation failed, continuing without ZIP:`, zipErr.message);
+      }
+    }
+
+    console.log(`Reels job ${jobId}: Complete. Generated ${reels.length} reels`);
     job.status = 'ready';
     job.progress = 100;
     job.step = 'finished';
@@ -192,8 +212,26 @@ async function processJob(jobId) {
     await cleanupFile(videoPath);
   } catch (error) {
     console.error(`Reels job ${jobId}: Error`, error.message);
+    console.error(`Reels job ${jobId}: Stack`, error.stack);
+    console.error(`Reels job ${jobId}: Request body`, JSON.stringify({ url: job.url, count: job.count, duration: job.duration, quality: job.quality }));
+    console.error(`Reels job ${jobId}: Video path`, videoPath);
+    console.error(`Reels job ${jobId}: Output dir`, job.outputDir);
+
+    const j = jobs.get(jobId);
+    if (j) {
+      j.status = 'error';
+      j.error = error.message || 'Reels generation failed';
+      j.errorDetails = {
+        stage: j.step || 'unknown',
+        message: error.message,
+        stack: error.stack,
+        videoPath,
+        outputDir: job.outputDir,
+        reelsGenerated: job.reels ? job.reels.length : 0
+      };
+    }
+
     await cleanupFile(videoPath).catch(() => {});
-    throw error;
   }
 }
 
@@ -211,3 +249,4 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
+

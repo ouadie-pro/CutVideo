@@ -282,6 +282,20 @@
   border: 1px solid rgba(239, 68, 68, 0.15);
 }
 
+.reels-error-details {
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+  color: var(--text-muted);
+}
+
+.reels-error-details p {
+  margin: 4px 0;
+  word-break: break-word;
+}
+
 @media (max-width: 600px) {
   .reels-generator {
     padding: 16px;

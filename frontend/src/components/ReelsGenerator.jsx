@@ -6,7 +6,7 @@ export default function ReelsGenerator({ url, quality, generator }) {
   const [reelCount, setReelCount] = useState(5);
   const [reelDuration, setReelDuration] = useState(15);
 
-  const { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, reels, hasZip, jobId } = generator;
+  const { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, errorDetails, reels, hasZip, jobId } = generator;
 
   const isGenerating = state === 'generating';
   const isComplete = state === 'complete';
@@ -147,6 +147,12 @@ export default function ReelsGenerator({ url, quality, generator }) {
       {isError && (
         <div className="reels-controls">
           <p className="reels-error">{error}</p>
+          {errorDetails && (
+            <div className="reels-error-details">
+              {errorDetails.stage && <p>Stage: {errorDetails.stage}</p>}
+              {errorDetails.message && <p>Details: {errorDetails.message}</p>}
+            </div>
+          )}
           <button className="reels-generate-btn error" onClick={handleGenerate} type="button">
             Try Again
           </button>
