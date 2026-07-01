@@ -1,0 +1,88 @@
+.error-alert {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-width: 440px;
+  width: calc(100% - 48px);
+  animation: errorSlideIn 0.35s ease;
+  z-index: 100;
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15);
+}
+
+.error-alert-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.error-alert-content svg {
+  width: 20px;
+  height: 20px;
+  color: var(--error);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.error-alert-content p {
+  font-size: 0.9rem;
+  color: var(--error);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.error-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: rgba(239, 68, 68, 0.5);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.error-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.error-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+}
+
+@keyframes errorSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .error-alert {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: none;
+    width: auto;
+  }
+}

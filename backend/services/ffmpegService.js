@@ -1,0 +1,60 @@
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+if (ffmpegPath) {
+  ffmpeg.setFfmpegPath(ffmpegPath);
+}
+
+function trimVideo(inputPath, outputPath, start, end) {
+  return new Promise((resolve, reject) => {
+    const duration = timeToSeconds(end) - timeToSeconds(start);
+
+    if (duration <= 0) {
+      return reject(new Error('Invalid time range: end must be after start'));
+    }
+
+    const ffmpegCommand = ffmpeg(inputPath)
+      .seekInput(start)
+      .duration(duration)
+      .outputOptions('-c', 'copy')
+      .output(outputPath)
+      .on('end', () => {
+        resolve(outputPath);
+      })
+      .on('error', (err) => {
+        reject(new Error(`FFmpeg error: ${err.message}`));
+      });
+
+    // Add timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      ffmpegCommand.kill();
+      reject(new Error('FFmpeg trim timeout after 5 minutes'));
+    }, 5 * 60 * 1000);
+
+    ffmpegCommand.on('end', () => clearTimeout(timeout));
+    ffmpegCommand.on('error', () => clearTimeout(timeout));
+
+    ffmpegCommand.run();
+  });
+}
+
+function timeToSeconds(time) {
+  if (!time || typeof time !== 'string') return 0;
+  const parts = time.split(':').map(Number);
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return parts[0] || 0;
+}
+
+function secondsToTime(seconds) {
+  if (!seconds || typeof seconds !== 'number') return '00:00:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+module.exports = { trimVideo, timeToSeconds, secondsToTime };
