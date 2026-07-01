@@ -157,7 +157,10 @@ async function getInfoWithYtDlp(url) {
 
     console.log(`Executing: "${cmd}" ${args.join(' ')}`);
 
-    const proc = spawn(cmd, args);
+    const proc = spawn(cmd, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
     let stdout = '';
     let stderr = '';
 
@@ -268,7 +271,6 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
       '--newline',
       '--progress',
       '--no-color',
-      '--progress-template', 'download:%(progress.status)s - %(progress.downloaded_bytes)s/%(progress.total_bytes)s - %(progress.percent)s',
       ...jsRuntimeArgs,
       url
     ];
@@ -282,23 +284,6 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
       return reject(err);
     }
 
-    if (startTime && endTime) {
-      try {
-        const infoOutput = execSync(
-          `"${cmd}" --dump-json --no-playlist --skip-download ${jsRuntimeArgs.length ? '--js-runtimes node' : ''} "${url}"`,
-          { maxBuffer: 1024 * 1024, timeout: 15000, encoding: 'utf-8' }
-        );
-        const info = JSON.parse(infoOutput);
-        if (info.is_live || info.was_live) {
-          console.log(`Live stream detected for ${url}, skipping --download-sections`);
-        } else {
-          args.push('--download-sections', `*${startTime}-${endTime}`);
-        }
-      } catch (e) {
-        console.warn(`Could not check video type for --download-sections: ${e.message}`);
-      }
-    }
-
     console.log(`Executing: "${cmd}" ${args.join(' ')}`);
 
     const env = {
@@ -310,8 +295,7 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
     const proc = spawn(cmd, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
-      env: env,
-      shell: false
+      env: env
     });
     let stderr = '';
     let stdout = '';
@@ -325,9 +309,10 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
       reject(new Error('Download timeout after 5 minutes'));
     }, 5 * 60 * 1000);
 
+    const progressRegex = /\[download\]\s+(\d+\.?\d*)%/;
+
     proc.stdout.on('data', (data) => {
       const text = data.toString();
-      console.log('[yt-dlp stdout chunk]:', text);
       stdout += text;
       stdoutBuffer += text;
 
@@ -335,14 +320,9 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
       stdoutBuffer = lines.pop();
 
       for (const line of lines) {
-        // Try to match the new progress-template format first
-        let match = line.match(/download:.*? - (\d+\.?\d*)%/);
-        // Fallback to the old format
-        if (!match) {
-          match = line.match(/\[download\]\s+(\d+\.?\d*)%/);
-        }
+        if (!line.includes('[download]')) continue;
+        const match = line.match(progressRegex);
         if (match && onProgress) {
-          console.log('[yt-dlp stdout progress]:', match[1]);
           onProgress(parseFloat(match[1]));
         }
       }
@@ -358,14 +338,8 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
       stderrBuffer = lines.pop();
 
       for (const line of lines) {
-        // Try to match the new progress-template format first
-        let match = line.match(/download:.*? - (\d+\.?\d*)%/);
-        // Fallback to the old format
-        if (!match) {
-          match = line.match(/\[download\]\s+(\d+\.?\d*)%/);
-        }
+        const match = line.match(progressRegex);
         if (match && onProgress) {
-          console.log('[yt-dlp stderr progress]:', match[1]);
           onProgress(parseFloat(match[1]));
         }
       }

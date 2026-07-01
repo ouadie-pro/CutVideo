@@ -84,7 +84,7 @@ export function useVideoDownloader() {
           } else if (abortRef.current) {
             reject(new Error('Cancelled'));
           } else {
-            pollingRef.current = setTimeout(poll, 1000);
+            pollingRef.current = setTimeout(poll, 500);
           }
         } catch (err) {
           reject(err);

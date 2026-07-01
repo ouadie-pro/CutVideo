@@ -108,21 +108,34 @@ async function processJob(jobId) {
     job.progress = 5;
     job.step = 'downloading';
 
+    let lastDownloadPct = -1;
+    let streamCount = 0;
+
     await youtubeService.downloadVideo(job.url, job.quality, downloadedPath, (pct) => {
-      job.progress = 5 + Math.round(pct * 0.55);
+      if (pct < lastDownloadPct) {
+        streamCount++;
+      }
+      lastDownloadPct = pct;
+      if (streamCount === 0) {
+        job.progress = 5 + Math.round(pct * 0.30);
+      } else {
+        job.progress = 35 + Math.round(pct * 0.25);
+      }
     }, job.start, job.end);
 
-    console.log(`Job ${jobId}: Download complete, starting trim`);
+    console.log(`Job ${jobId}: Download complete, starting FFmpeg trim`);
     job.progress = 60;
     job.step = 'cutting';
 
-    await ffmpegService.trimVideo(downloadedPath, outputPath, job.start, job.end);
+    await ffmpegService.trimVideo(downloadedPath, outputPath, job.start, job.end, (ffmpegProgress) => {
+      job.progress = 60 + Math.round(ffmpegProgress * 0.3);
+    });
 
     console.log(`Job ${jobId}: Trim complete, cleaning up`);
+    await cleanupFile(downloadedPath);
+
     job.progress = 90;
     job.step = 'finishing';
-
-    await cleanupFile(downloadedPath);
 
     const stats = fs.statSync(outputPath);
     if (stats.size === 0) {

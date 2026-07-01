@@ -4,7 +4,7 @@ if (ffmpegPath) {
   ffmpeg.setFfmpegPath(ffmpegPath);
 }
 
-function trimVideo(inputPath, outputPath, start, end) {
+function trimVideo(inputPath, outputPath, start, end, onProgress) {
   return new Promise((resolve, reject) => {
     const duration = timeToSeconds(end) - timeToSeconds(start);
 
@@ -23,6 +23,21 @@ function trimVideo(inputPath, outputPath, start, end) {
       .on('error', (err) => {
         reject(new Error(`FFmpeg error: ${err.message}`));
       });
+
+    if (onProgress) {
+      ffmpegCommand.on('stderr', (stderrLine) => {
+        const timeMatch = stderrLine.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+        if (timeMatch) {
+          const hours = parseInt(timeMatch[1], 10);
+          const minutes = parseInt(timeMatch[2], 10);
+          const seconds = parseInt(timeMatch[3], 10);
+          const centiseconds = parseInt(timeMatch[4], 10);
+          const processedTime = hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
+          const progress = Math.min(100, Math.round((processedTime / duration) * 100));
+          onProgress(progress);
+        }
+      });
+    }
 
     // Add timeout to prevent hanging
     const timeout = setTimeout(() => {
