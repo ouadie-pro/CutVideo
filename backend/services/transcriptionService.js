@@ -16,6 +16,52 @@ function getFfmpegPath() {
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 const TRANSCRIBE_TIMEOUT = 3 * 60 * 1000;
 
+let localTranscriptionChecked = false;
+let localTranscriptionAvailable = false;
+
+function checkLocalTranscription() {
+  if (localTranscriptionChecked) return localTranscriptionAvailable;
+  localTranscriptionChecked = true;
+  try {
+    const scriptPath = path.resolve(__dirname, '..', 'python', 'transcribe.py');
+    if (!fs.existsSync(scriptPath)) {
+      console.warn('transcriptionService: transcribe.py not found');
+      return false;
+    }
+    const result = require('child_process').spawnSync('python3', ['-c', 'from faster_whisper import WhisperModel; print("ok")'], {
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+    if (result.status === 0) {
+      localTranscriptionAvailable = true;
+    } else {
+      const result2 = require('child_process').spawnSync('python', ['-c', 'from faster_whisper import WhisperModel; print("ok")'], {
+        timeout: 5000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true
+      });
+      if (result2.status === 0) {
+        localTranscriptionAvailable = true;
+      }
+    }
+  } catch {
+    localTranscriptionAvailable = false;
+  }
+  if (!localTranscriptionAvailable) {
+    console.warn('transcriptionService: faster-whisper not available, local transcription disabled. pip install -r backend/python/requirements.txt');
+  }
+  return localTranscriptionAvailable;
+}
+
+function getPythonCmd() {
+  const r1 = require('child_process').spawnSync('python3', ['--version'], {
+    timeout: 3000, stdio: 'pipe', windowsHide: true
+  });
+  if (r1.status === 0) return 'python3';
+  return 'python';
+}
+
 function extractAudio(videoPath, outputPath) {
   return new Promise((resolve, reject) => {
     const ff = getFfmpegPath();
@@ -72,15 +118,15 @@ function compressAudio(inputPath, outputPath) {
   });
 }
 
-async function transcribeAudio(videoPath) {
+async function transcribeWithOpenAI(videoPath) {
   let tempAudio = null;
   let compressedAudio = null;
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.warn('transcriptionService: OPENAI_API_KEY not set, skipping transcription');
-      return { segments: [], fullText: '' };
+      console.warn('transcriptionService: OPENAI_API_KEY not set, cannot use openai provider');
+      return null;
     }
 
     const model = process.env.TRANSCRIBE_MODEL || 'whisper-1';
@@ -102,7 +148,7 @@ async function transcribeAudio(videoPath) {
       const compressedStat = fs.statSync(audioFile);
       if (compressedStat.size > MAX_FILE_SIZE) {
         console.warn(`Transcription: compressed audio still too large (${(compressedStat.size / 1024 / 1024).toFixed(1)}MB), returning empty`);
-        return { segments: [], fullText: '' };
+        return null;
       }
     }
 
@@ -122,7 +168,7 @@ async function transcribeAudio(videoPath) {
 
     if (!transcription || !transcription.segments || transcription.segments.length === 0) {
       console.warn('transcriptionService: no speech detected in audio');
-      return { segments: [], fullText: '' };
+      return null;
     }
 
     const segments = transcription.segments.map(s => ({
@@ -135,12 +181,8 @@ async function transcribeAudio(videoPath) {
 
     return { segments, fullText };
   } catch (err) {
-    if (err.message && err.message.includes('OPENAI_API_KEY')) {
-      console.warn('transcriptionService: invalid OpenAI API key');
-      return { segments: [], fullText: '' };
-    }
-    console.warn(`transcriptionService: error: ${err.message}`);
-    return { segments: [], fullText: '' };
+    console.warn(`transcriptionService: OpenAI transcription error: ${err.message}`);
+    return null;
   } finally {
     if (tempAudio && fs.existsSync(tempAudio)) {
       try { fs.unlinkSync(tempAudio); } catch {}
@@ -148,6 +190,128 @@ async function transcribeAudio(videoPath) {
     if (compressedAudio && fs.existsSync(compressedAudio)) {
       try { fs.unlinkSync(compressedAudio); } catch {}
     }
+  }
+}
+
+async function transcribeWithLocal(videoPath) {
+  let tempAudio = null;
+
+  try {
+    if (!checkLocalTranscription()) return null;
+
+    const scriptPath = path.resolve(__dirname, '..', 'python', 'transcribe.py');
+    if (!fs.existsSync(scriptPath)) {
+      console.warn('transcriptionService: transcribe.py not found');
+      return null;
+    }
+
+    const ext = '.wav';
+    tempAudio = path.resolve(
+      path.dirname(videoPath),
+      `transcribe_${path.basename(videoPath, path.extname(videoPath))}${ext}`
+    );
+
+    const ff = getFfmpegPath();
+    const extractArgs = [
+      '-i', videoPath,
+      '-vn',
+      '-acodec', 'pcm_s16le',
+      '-ar', '16000',
+      '-ac', '1',
+      '-y',
+      tempAudio
+    ];
+    console.log(`Transcription: extracting audio for local: "${ff}" ${extractArgs.join(' ')}`);
+    await new Promise((resolve, reject) => {
+      const proc = spawn(ff, extractArgs, { windowsHide: true });
+      let stderr = '';
+      proc.stderr.on('data', (d) => { stderr += d.toString(); });
+      proc.on('close', (code) => {
+        if (code === 0 && fs.existsSync(tempAudio)) resolve();
+        else reject(new Error(`Audio extraction failed: ${stderr.slice(-300)}`));
+      });
+      proc.on('error', reject);
+    });
+
+    const pythonCmd = getPythonCmd();
+    const modelSize = process.env.WHISPER_MODEL || 'base';
+
+    const result = await new Promise((resolve, reject) => {
+      const proc = spawn(pythonCmd, [scriptPath, tempAudio, modelSize], {
+        windowsHide: true,
+        timeout: 600000
+      });
+      let stdout = '';
+      let stderr = '';
+      proc.stdout.on('data', (d) => { stdout += d.toString(); });
+      proc.stderr.on('data', (d) => { stderr += d.toString(); });
+
+      const timer = setTimeout(() => {
+        proc.kill();
+        reject(new Error('Local transcription timed out after 10 minutes'));
+      }, 600000);
+
+      proc.on('close', (code) => {
+        clearTimeout(timer);
+        if (code === 0 && stdout) {
+          try {
+            resolve(JSON.parse(stdout));
+          } catch {
+            reject(new Error(`transcribe.py: unparseable JSON: ${stdout.slice(200)}`));
+          }
+        } else {
+          reject(new Error(`transcribe.py exited with code ${code}: ${stderr.slice(200)}`));
+        }
+      });
+      proc.on('error', reject);
+    });
+
+    if (!result || result.error) {
+      console.warn(`transcriptionService: local transcription error: ${result?.error || 'no result'}`);
+      return null;
+    }
+
+    return {
+      segments: result.segments || [],
+      fullText: result.full_text || ''
+    };
+  } catch (err) {
+    console.warn(`transcriptionService: local transcription error: ${err.message}`);
+    return null;
+  } finally {
+    if (tempAudio && fs.existsSync(tempAudio)) {
+      try { fs.unlinkSync(tempAudio); } catch {}
+    }
+  }
+}
+
+async function transcribeAudio(videoPath) {
+  const provider = (process.env.TRANSCRIPTION_PROVIDER || 'local').toLowerCase();
+
+  try {
+    let result = null;
+
+    if (provider === 'openai') {
+      result = await transcribeWithOpenAI(videoPath);
+    } else if (provider === 'local') {
+      result = await transcribeWithLocal(videoPath);
+    } else if (provider === 'none') {
+      console.log('transcriptionService: TRANSCRIPTION_PROVIDER=none, skipping');
+      return { segments: [], fullText: '' };
+    } else {
+      console.warn(`transcriptionService: unknown TRANSCRIPTION_PROVIDER "${provider}", falling back to local`);
+      result = await transcribeWithLocal(videoPath);
+    }
+
+    if (!result) {
+      console.warn('transcriptionService: transcription returned no result');
+      return { segments: [], fullText: '' };
+    }
+
+    return result;
+  } catch (err) {
+    console.warn(`transcriptionService: error: ${err.message}`);
+    return { segments: [], fullText: '' };
   }
 }
 

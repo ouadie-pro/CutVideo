@@ -11,6 +11,7 @@ if (ffprobeStaticPath) ffmpeg.setFfprobePath(ffprobeStaticPath);
 
 const transcriptionService = require('./transcriptionService');
 const highlightAIService = require('./highlightAIService');
+const lexicalHighlightService = require('./lexicalHighlightService');
 const smartCropService = require('./smartCropService');
 const captionService = require('./captionService');
 
@@ -234,7 +235,7 @@ function detectAudioBeats(videoPath) {
   });
 }
 
-function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile) {
+function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile, transcript) {
   const candidates = [];
   const step = Math.max(1, Math.floor(totalDuration / 150));
 
@@ -293,7 +294,13 @@ function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBea
     candidates.push({ start: Math.max(0, start), end: Math.min(totalDuration, end), score });
   }
 
-  candidates.sort((a, b) => b.score - a.score);
+  if (transcript && transcript.segments && transcript.segments.length > 0) {
+    const scored = lexicalHighlightService.addTranscriptBonusToCandidates(candidates, transcript.segments, reelDuration);
+    candidates.length = 0;
+    candidates.push(...scored);
+  } else {
+    candidates.sort((a, b) => b.score - a.score);
+  }
 
   const selected = [];
   const minGap = reelDuration * 0.6;
@@ -306,6 +313,10 @@ function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBea
 
   selected.sort((a, b) => a.start - b.start);
   return selected;
+}
+
+function escapeFfmpegFilterArg(str) {
+  return String(str).replace(/[\\'",;\[\]:]/g, '\\$&');
 }
 
 function sliceCropPath(cropPath, startTime, duration) {
@@ -384,10 +395,13 @@ function buildCropExpression(cropPath, clipDuration, sourceWidth, sourceHeight) 
   const xExpr = nest(samples, s => s.xPart, 0);
   const yExpr = nest(samples, s => s.yPart, 0);
 
-  return `crop=1080:1920:${xExpr}:${yExpr}`;
+  const escapedX = escapeFfmpegFilterArg(xExpr);
+  const escapedY = escapeFfmpegFilterArg(yExpr);
+
+  return `crop=1080:1920:${escapedX}:${escapedY}`;
 }
 
-function createVerticalClip(inputPath, outputPath, startTime, duration, onProgress, editOptions) {
+function runFfmpegEncode(inputPath, outputPath, startTime, duration, onProgress, editOptions) {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(inputPath)) {
       return reject(new Error(`Source video not found: ${inputPath}`));
@@ -430,13 +444,16 @@ function createVerticalClip(inputPath, outputPath, startTime, duration, onProgre
     if (useKenBurns) {
       const zoomEnd = 1.08;
       const zoomRange = zoomEnd - 1.0;
+      const kbScaleExpr = escapeFfmpegFilterArg(`${1.0}+${zoomRange}*t/${duration}`);
+      const kbCropXExpr = escapeFfmpegFilterArg(`(iw*${zoomEnd}-1080)/2`);
+      const kbCropYExpr = escapeFfmpegFilterArg(`(ih*${zoomEnd}-1920)/2`);
       videoFilters.push(
-        `scale=iw*(${1.0}+${zoomRange}*t/${duration}):ih*(${1.0}+${zoomRange}*t/${duration}):flags=bilinear,crop=1080:1920:(iw*${zoomEnd}-1080)/2:(ih*${zoomEnd}-1920)/2`
+        `scale=iw*${kbScaleExpr}:ih*${kbScaleExpr}:flags=bilinear,crop=1080:1920:${kbCropXExpr}:${kbCropYExpr}`
       );
     }
 
     if (assPath && fs.existsSync(assPath)) {
-      const normalizedAssPath = assPath.replace(/\\/g, '/');
+      const normalizedAssPath = escapeFfmpegFilterArg(assPath.replace(/\\/g, '/'));
       videoFilters.push(`ass='${normalizedAssPath}'`);
     }
 
@@ -490,6 +507,18 @@ function createVerticalClip(inputPath, outputPath, startTime, duration, onProgre
 
     cmd.save(resolvedOutputPath);
   });
+}
+
+function createVerticalClip(inputPath, outputPath, startTime, duration, onProgress, editOptions) {
+  return runFfmpegEncode(inputPath, outputPath, startTime, duration, onProgress, editOptions)
+    .catch(err => {
+      if (editOptions && editOptions.cropPath) {
+        console.warn(`[reels] Smart crop encode failed, retrying with center crop: ${err.message}`);
+        const retryOpts = { ...editOptions, cropPath: null };
+        return runFfmpegEncode(inputPath, outputPath, startTime, duration, onProgress, retryOpts);
+      }
+      throw err;
+    });
 }
 
 function extractThumbnail(videoPath, outputPath) {
@@ -576,7 +605,7 @@ async function generateReels(options) {
   }
 
   if (!highlights) {
-    highlights = scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile);
+    highlights = scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile, transcript);
   }
 
   if (highlights.length === 0) {
@@ -620,7 +649,7 @@ async function generateReels(options) {
           'adding captions'
         );
         assPath = path.resolve(outputDir, `captions_${idx}.ass`);
-        const captionResult = await captionService.generateCaptionFile(videoPath, assPath);
+        const captionResult = await captionService.generateCaptionFile(transcript, assPath, { start: h.start, end: h.start + reelDuration });
         if (captionResult) {
           clipEditOpts.assPath = captionResult;
         }

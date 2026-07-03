@@ -20,19 +20,10 @@ function doOverlap(a, b) {
   return a.start < b.end && b.start < a.end;
 }
 
-async function selectHighlightsWithAI({ transcript, totalDuration, count, reelDuration, styleProfile }) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
-
-  const model = process.env.HIGHLIGHT_AI_MODEL || 'gpt-4o-mini';
+function buildUserPrompt({ transcript, totalDuration, count, reelDuration, styleProfile }) {
   const minDuration = Math.max(3, reelDuration * 0.8);
   const maxDuration = reelDuration * 1.2;
-
   const transcriptText = formatTranscript(transcript.segments);
-
-  const systemPrompt = `You are a video editor who selects the best moments for short-form social media reels. Given a transcript with timestamps, pick exactly ${count} non-overlapping highlight windows that would make the most engaging standalone clips.`;
 
   let styleInstruction = '';
   if (styleProfile) {
@@ -55,6 +46,8 @@ async function selectHighlightsWithAI({ transcript, totalDuration, count, reelDu
       styleInstruction = `\n\nMatch the editing style of a reference video which has: ${parts.join(', ')}. Prefer windows whose pacing and energy fit this style.`;
     }
   }
+
+  const systemPrompt = `You are a video editor who selects the best moments for short-form social media reels. Given a transcript with timestamps, pick exactly ${count} non-overlapping highlight windows that would make the most engaging standalone clips.`;
 
   const userPrompt = `Here is the transcript of a ${formatTime(totalDuration)} video:
 
@@ -80,19 +73,10 @@ Return JSON in this exact structure (no markdown, no code fences):
   ]
 }`;
 
-  const openai = new OpenAI({ apiKey });
+  return { systemPrompt, userPrompt };
+}
 
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-    response_format: { type: 'json_object' },
-    temperature: 0.7
-  });
-
-  const content = response.choices?.[0]?.message?.content;
+function parseHighlightsResponse(content, totalDuration, count) {
   if (!content) {
     throw new Error('AI returned empty response');
   }
@@ -112,7 +96,7 @@ Return JSON in this exact structure (no markdown, no code fences):
   highlights = highlights.map(h => ({
     start: clamp(h.start, 0, totalDuration),
     end: clamp(h.end, 0, totalDuration),
-    title: typeof h.title === 'string' ? h.title : `Highlight`,
+    title: typeof h.title === 'string' ? h.title : 'Highlight',
     reason: typeof h.reason === 'string' ? h.reason : '',
     score: typeof h.score === 'number' ? clamp(Math.round(h.score), 0, 100) : 50
   }));
@@ -129,6 +113,80 @@ Return JSON in this exact structure (no markdown, no code fences):
   deduped.sort((a, b) => a.start - b.start);
 
   return deduped.slice(0, count);
+}
+
+async function selectWithOpenAI({ transcript, totalDuration, count, reelDuration, styleProfile }) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY not configured');
+  }
+
+  const model = process.env.HIGHLIGHT_AI_MODEL || 'gpt-4o-mini';
+  const { systemPrompt, userPrompt } = buildUserPrompt({ transcript, totalDuration, count, reelDuration, styleProfile });
+
+  const openai = new OpenAI({ apiKey });
+
+  const response = await openai.chat.completions.create({
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.7
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  return parseHighlightsResponse(content, totalDuration, count);
+}
+
+async function selectWithOllama({ transcript, totalDuration, count, reelDuration, styleProfile }) {
+  const baseUrl = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/+$/, '') + '/v1/chat/completions';
+  const model = process.env.OLLAMA_MODEL || 'llama3.1';
+  const { systemPrompt, userPrompt } = buildUserPrompt({ transcript, totalDuration, count, reelDuration, styleProfile });
+
+  const response = await fetch(baseUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      stream: false,
+      temperature: 0.7
+    }),
+    signal: AbortSignal.timeout(60000)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama returned status ${response.status}: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  return parseHighlightsResponse(content, totalDuration, count);
+}
+
+async function selectHighlightsWithAI(params) {
+  const provider = (process.env.LLM_PROVIDER || 'none').toLowerCase();
+
+  try {
+    if (provider === 'openai') {
+      return await selectWithOpenAI(params);
+    } else if (provider === 'ollama') {
+      return await selectWithOllama(params);
+    } else if (provider === 'none') {
+      return [];
+    } else {
+      console.warn(`highlightAIService: unknown LLM_PROVIDER "${provider}", treating as none`);
+      return [];
+    }
+  } catch (err) {
+    console.warn(`highlightAIService: ${provider} selection failed: ${err.message}, falling back`);
+    return [];
+  }
 }
 
 module.exports = { selectHighlightsWithAI };

@@ -1,8 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 
-const transcriptionService = require('./transcriptionService');
-
 function escapeAss(text) {
   return text
     .replace(/\{/g, '\\{')
@@ -70,20 +68,28 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   return header + events.join('\n');
 }
 
-async function generateCaptionFile(clipPath, outputAssPath) {
+async function generateCaptionFile(transcript, outputAssPath, timeWindow) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    if (!transcript || !transcript.segments || transcript.segments.length === 0) {
       return null;
     }
 
-    const transcript = await transcriptionService.transcribeAudio(clipPath);
+    const windowStart = timeWindow ? timeWindow.start : 0;
+    const windowEnd = timeWindow ? timeWindow.end : Infinity;
 
-    if (!transcript.segments || transcript.segments.length === 0) {
+    const windowedSegments = transcript.segments
+      .filter(s => s.start < windowEnd && s.end > windowStart)
+      .map(s => ({
+        ...s,
+        start: Math.max(0, s.start - windowStart),
+        end: Math.max(0, s.end - windowStart)
+      }));
+
+    if (windowedSegments.length === 0) {
       return null;
     }
 
-    const entries = transcriptToAssEntries(transcript.segments);
+    const entries = transcriptToAssEntries(windowedSegments);
     if (entries.length === 0) {
       return null;
     }
