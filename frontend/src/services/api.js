@@ -31,8 +31,8 @@ export async function downloadCutFile(jobId, onProgress) {
   return response;
 }
 
-export async function startReelsJob(url, count, duration, quality) {
-  const { data } = await api.post('/reels/generate', { url, count, duration, quality });
+export async function startReelsJob(url, count, duration, quality, captions = true, smartCrop = true) {
+  const { data } = await api.post('/reels/generate', { url, count, duration, quality, captions, smartCrop });
   return data;
 }
 
@@ -53,6 +53,21 @@ export async function downloadAllReels(jobId) {
     responseType: 'blob'
   });
   return response;
+}
+
+export async function getReferenceReels() {
+  const { data } = await api.get('/reference-reels/list');
+  return data;
+}
+
+export async function analyzeReferenceReel(filename) {
+  const { data } = await api.get(`/reference-reels/analyze/${encodeURIComponent(filename)}`);
+  return data;
+}
+
+export async function startReelsWithReference(url, count, duration, quality, referenceFilename) {
+  const { data } = await api.post('/reels/generate-with-reference', { url, count, duration, quality, referenceFilename });
+  return data;
 }
 
 export default api;

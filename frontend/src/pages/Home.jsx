@@ -7,9 +7,11 @@ import DownloadButton from '../components/DownloadButton';
 import ErrorAlert from '../components/ErrorAlert';
 import RecentDownloads from '../components/RecentDownloads';
 import ReelsGenerator from '../components/ReelsGenerator';
+import ReferenceReels from '../components/ReferenceReels';
 import { useVideoAnalyzer } from '../hooks/useVideoAnalyzer';
 import { useVideoDownloader } from '../hooks/useVideoDownloader';
 import { useReelsGenerator } from '../hooks/useReelsGenerator';
+import { useReferenceReels } from '../hooks/useReferenceReels';
 import './Home.css';
 
 function formatTime(seconds) {
@@ -23,6 +25,7 @@ export default function Home() {
   const { analyze, loading, videoInfo, error: analyzeError, setError: setAnalyzeError, reset } = useVideoAnalyzer();
   const downloader = useVideoDownloader();
   const reelsGenerator = useReelsGenerator();
+  const referenceReels = useReferenceReels();
   const [url, setUrl] = useState('');
   const [startTime, setStartTime] = useState('00:00:00');
   const [endTime, setEndTime] = useState('00:00:10');
@@ -113,9 +116,20 @@ export default function Home() {
               url={url}
               quality={quality}
               generator={reelsGenerator}
+              selectedReference={referenceReels.selected}
             />
           </div>
         )}
+
+        <ReferenceReels
+          reels={referenceReels.reels}
+          selected={referenceReels.selected}
+          onSelect={referenceReels.selectReel}
+          loading={referenceReels.loading}
+          analyzing={referenceReels.analyzing}
+          analysis={referenceReels.analysis}
+          getMetricsSummary={referenceReels.getMetricsSummary}
+        />
 
         <RecentDownloads onSelect={handleRecentSelect} />
       </main>

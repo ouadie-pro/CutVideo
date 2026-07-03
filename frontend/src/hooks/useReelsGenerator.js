@@ -1,9 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { startReelsJob, getReelsStatus, downloadReelFile, downloadAllReels } from '../services/api';
+import { startReelsJob, startReelsWithReference, getReelsStatus, downloadReelFile, downloadAllReels } from '../services/api';
 
 const stepMap = {
   'downloading': 'Downloading...',
-  'analyzing video': 'Finding highlights...',
+  'analyzing video': 'Analyzing...',
+  'transcribing': 'Transcribing audio...',
+  'selecting highlights with AI': 'Finding the best moments...',
+  'smart cropping': 'Tracking the action...',
+  'adding captions': 'Adding captions...',
+  'polishing audio': 'Polishing audio...',
   'compressing': 'Compressing...',
   'finished': 'Finished.',
 };
@@ -28,6 +33,7 @@ export function useReelsGenerator() {
   const [reels, setReels] = useState([]);
   const [hasZip, setHasZip] = useState(false);
   const [jobId, setJobId] = useState(null);
+  const [referenceInfo, setReferenceInfo] = useState(null);
   const pollingRef = useRef(null);
   const abortRef = useRef(false);
 
@@ -41,7 +47,7 @@ export function useReelsGenerator() {
     };
   }, []);
 
-  const generate = useCallback(async (url, count, reelDuration, quality) => {
+  const generate = useCallback(async (url, count, reelDuration, quality, referenceFilename, captions = true, smartCrop = true) => {
     setState('generating');
     setProgress(0);
     setError(null);
@@ -49,11 +55,21 @@ export function useReelsGenerator() {
     setReels([]);
     setHasZip(false);
     setJobId(null);
+    setReferenceInfo(null);
     setStep('Downloading...');
     abortRef.current = false;
 
     try {
-      const result = await startReelsJob(url, count, reelDuration, quality);
+      let result;
+      if (referenceFilename) {
+        result = await startReelsWithReference(url, count, reelDuration, quality, referenceFilename);
+        if (result.referenceReel) {
+          setReferenceInfo(result.referenceReel);
+        }
+      } else {
+        result = await startReelsJob(url, count, reelDuration, quality, captions, smartCrop);
+      }
+
       const id = result.jobId;
       setJobId(id);
       if (abortRef.current) return;
@@ -170,6 +186,6 @@ export function useReelsGenerator() {
     setErrorDetails(null);
   }, [cancel]);
 
-  return { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, errorDetails, reels, hasZip, jobId, setError };
+  return { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, errorDetails, reels, hasZip, jobId, referenceInfo, setError };
 }
 
