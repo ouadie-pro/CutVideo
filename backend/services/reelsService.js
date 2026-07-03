@@ -444,7 +444,7 @@ function runFfmpegEncode(inputPath, outputPath, startTime, duration, onProgress,
     if (useKenBurns) {
       const zoomEnd = 1.08;
       const zoomRange = zoomEnd - 1.0;
-      const kbScaleExpr = escapeFfmpegFilterArg(`${1.0}+${zoomRange}*t/${duration}`);
+      const kbScaleExpr = escapeFfmpegFilterArg(`(${1.0}+${zoomRange}*t/${duration})`);
       const kbCropXExpr = escapeFfmpegFilterArg(`(iw*${zoomEnd}-1080)/2`);
       const kbCropYExpr = escapeFfmpegFilterArg(`(ih*${zoomEnd}-1920)/2`);
       videoFilters.push(

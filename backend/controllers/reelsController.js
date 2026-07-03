@@ -70,7 +70,7 @@ exports.generateWithReference = async (req, res, next) => {
 
 exports.generate = async (req, res, next) => {
   try {
-    const { url, count, duration, quality, captions, smartCrop, styleReferenceId } = req.body;
+    const { url, count, duration, quality, captions, smartCrop } = req.body;
 
     if (!url || !count || !duration) {
       return res.status(400).json({ error: 'url, count, and duration are required' });
@@ -82,18 +82,6 @@ exports.generate = async (req, res, next) => {
 
     const reelCount = Math.min(Math.max(parseInt(count) || 1, 1), 20);
     const reelDuration = Math.min(Math.max(parseInt(duration) || 15, 15), 60);
-
-    let styleProfile = null;
-    if (styleReferenceId) {
-      const styleAnalysisService = require('../services/styleAnalysisService');
-      const safeId = path.basename(styleReferenceId);
-      const samplePath = path.join(__dirname, '..', 'sample-reels', safeId);
-      if (fs.existsSync(samplePath)) {
-        styleProfile = await styleAnalysisService.getOrAnalyze(samplePath);
-      } else {
-        console.warn(`Style reference not found: ${samplePath}`);
-      }
-    }
 
     const jobId = crypto.randomUUID();
     const outputDir = path.join(TEMP_DIR, `reels_${jobId}`);
@@ -114,7 +102,6 @@ exports.generate = async (req, res, next) => {
       count: reelCount,
       duration: reelDuration,
       quality,
-      styleProfile,
       editOptions: {
         captions: captions !== false,
         smartCrop: smartCrop !== false,
@@ -133,7 +120,7 @@ exports.generate = async (req, res, next) => {
       }
     });
 
-    res.json({ jobId, styleReference: styleProfile ? { id: styleReferenceId } : null });
+    res.json({ jobId });
   } catch (error) {
     next(error);
   }

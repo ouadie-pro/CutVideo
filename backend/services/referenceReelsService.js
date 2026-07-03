@@ -14,6 +14,16 @@ const THUMBS_DIR = path.join(REELS_DIR, '.thumbs');
 
 const SUPPORTED_EXT = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.flv', '.wmv'];
 
+console.log(`[referenceReels] REELS_DIR = ${REELS_DIR}`);
+try {
+  const files = fs.readdirSync(REELS_DIR);
+  const videoFiles = files.filter(f => SUPPORTED_EXT.includes(path.extname(f).toLowerCase()));
+  console.log(`[referenceReels] Files in dir: ${files.length}, Supported videos: ${videoFiles.length}`);
+  if (videoFiles.length > 0) console.log(`[referenceReels] Videos: ${videoFiles.join(', ')}`);
+} catch (e) {
+  console.warn(`[referenceReels] Cannot read dir: ${e.message}`);
+}
+
 function getFfmpegPath() {
   if (ffmpegStatic) return ffmpegStatic;
   try { const p = require('ffmpeg-static'); if (p) return p; } catch {}

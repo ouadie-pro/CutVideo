@@ -8,7 +8,9 @@ export default function ReferenceReels({
   loading,
   analyzing,
   getMetricsSummary,
-  analysis
+  analysis,
+  error,
+  onRefresh
 }) {
   const [previewFile, setPreviewFile] = useState(null);
   const [previewLoaded, setPreviewLoaded] = useState({});
@@ -57,8 +59,33 @@ export default function ReferenceReels({
     );
   }
 
+  if (error) {
+    return (
+      <div className="ref-reels-section">
+        <div className="ref-reels-header">
+          <h3>Reference Reels</h3>
+        </div>
+        <div className="ref-reels-error">
+          <p>{error}</p>
+          <button className="ref-reels-retry-btn" onClick={onRefresh} type="button">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (reels.length === 0) {
-    return null;
+    return (
+      <div className="ref-reels-section">
+        <div className="ref-reels-header">
+          <h3>Reference Reels</h3>
+        </div>
+        <p className="ref-reels-empty">
+          No reference reels found. Add video files to <code>backend/reelsSpeed/</code> and refresh.
+        </p>
+      </div>
+    );
   }
 
   return (

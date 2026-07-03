@@ -129,6 +129,8 @@ export default function Home() {
           analyzing={referenceReels.analyzing}
           analysis={referenceReels.analysis}
           getMetricsSummary={referenceReels.getMetricsSummary}
+          error={referenceReels.error}
+          onRefresh={referenceReels.refresh}
         />
 
         <RecentDownloads onSelect={handleRecentSelect} />

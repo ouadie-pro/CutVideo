@@ -7,7 +7,6 @@ const analyzeRoutes = require('./routes/analyze');
 const cutRoutes = require('./routes/cut');
 const reelsRoutes = require('./routes/reels');
 const referenceReelsRoutes = require('./routes/referenceReels');
-const stylesRoutes = require('./routes/styles');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,7 +23,6 @@ app.use('/api', analyzeRoutes);
 app.use('/api', cutRoutes);
 app.use('/api', reelsRoutes);
 app.use('/api', referenceReelsRoutes);
-app.use('/api', stylesRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.message);

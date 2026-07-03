@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import ProgressBar from './ProgressBar';
-import StyleReferencePicker from './StyleReferencePicker';
 import './ReelsGenerator.css';
 
 export default function ReelsGenerator({ url, quality, generator, selectedReference, referenceReels }) {
@@ -8,7 +7,6 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
   const [reelDuration, setReelDuration] = useState(15);
   const [captions, setCaptions] = useState(true);
   const [smartCrop, setSmartCrop] = useState(true);
-  const [styleReferenceId, setStyleReferenceId] = useState(null);
 
   const { generate, downloadOne, downloadAll, cancel, reset, state, progress, step, error, errorDetails, reels, hasZip, jobId, referenceInfo } = generator;
 
@@ -18,7 +16,7 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
   const isIdle = state === 'idle';
 
   const handleGenerate = () => {
-    generate(url, reelCount, reelDuration, quality, selectedReference, captions, smartCrop, styleReferenceId);
+    generate(url, reelCount, reelDuration, quality, selectedReference, captions, smartCrop);
   };
 
   return (
@@ -44,10 +42,6 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
 
       {isIdle && (
         <div className="reels-controls">
-          <StyleReferencePicker
-            selectedId={styleReferenceId}
-            onSelect={setStyleReferenceId}
-          />
           {selectedReference && (
             <div className="reels-ref-notice">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
