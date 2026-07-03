@@ -31,9 +31,18 @@ export async function downloadCutFile(jobId, onProgress) {
   return response;
 }
 
-export async function startReelsJob(url, count, duration, quality, captions = true, smartCrop = true) {
-  const { data } = await api.post('/reels/generate', { url, count, duration, quality, captions, smartCrop });
+export async function startReelsJob(url, count, duration, quality, captions = true, smartCrop = true, styleReferenceId = null) {
+  const { data } = await api.post('/reels/generate', { url, count, duration, quality, captions, smartCrop, styleReferenceId });
   return data;
+}
+
+export async function getStyleSamples() {
+  const { data } = await api.get('/styles/samples');
+  return data;
+}
+
+export function getStyleThumbnailUrl(id) {
+  return `/api/styles/samples/${encodeURIComponent(id)}/thumbnail`;
 }
 
 export async function getReelsStatus(jobId) {

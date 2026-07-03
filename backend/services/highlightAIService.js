@@ -20,7 +20,7 @@ function doOverlap(a, b) {
   return a.start < b.end && b.start < a.end;
 }
 
-async function selectHighlightsWithAI({ transcript, totalDuration, count, reelDuration }) {
+async function selectHighlightsWithAI({ transcript, totalDuration, count, reelDuration, styleProfile }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY not configured');
@@ -34,6 +34,28 @@ async function selectHighlightsWithAI({ transcript, totalDuration, count, reelDu
 
   const systemPrompt = `You are a video editor who selects the best moments for short-form social media reels. Given a transcript with timestamps, pick exactly ${count} non-overlapping highlight windows that would make the most engaging standalone clips.`;
 
+  let styleInstruction = '';
+  if (styleProfile) {
+    const parts = [];
+    if (styleProfile.cutsPerMinute != null) {
+      parts.push(`cut rate of ${styleProfile.cutsPerMinute.toFixed(1)} cuts per minute`);
+    }
+    if (styleProfile.avgShotDurationSec != null) {
+      parts.push(`shots lasting ~${styleProfile.avgShotDurationSec.toFixed(1)} seconds on average`);
+    }
+    if (styleProfile.motionIntensity != null) {
+      if (styleProfile.motionIntensity > 60) parts.push('high motion intensity');
+      else if (styleProfile.motionIntensity > 30) parts.push('moderate motion intensity');
+      else parts.push('low motion intensity');
+    }
+    if (styleProfile.captions && styleProfile.captions.present) {
+      parts.push('captions at the ' + (styleProfile.captions.position || 'bottom'));
+    }
+    if (parts.length > 0) {
+      styleInstruction = `\n\nMatch the editing style of a reference video which has: ${parts.join(', ')}. Prefer windows whose pacing and energy fit this style.`;
+    }
+  }
+
   const userPrompt = `Here is the transcript of a ${formatTime(totalDuration)} video:
 
 ${transcriptText}
@@ -44,7 +66,7 @@ Choose moments that are:
 - Emotionally engaging, funny, surprising, or quotable
 - Self-contained (complete thoughts, don't cut mid-sentence)
 - Likely to perform well as standalone short-form clips
-
+${styleInstruction}
 Return JSON in this exact structure (no markdown, no code fences):
 {
   "highlights": [

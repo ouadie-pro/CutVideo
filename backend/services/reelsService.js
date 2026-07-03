@@ -234,7 +234,7 @@ function detectAudioBeats(videoPath) {
   });
 }
 
-function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration) {
+function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile) {
   const candidates = [];
   const step = Math.max(1, Math.floor(totalDuration / 150));
 
@@ -273,6 +273,22 @@ function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBea
     if (windowScenes.length >= 4) score += 5;
     if (avgMotion > 0.3) score += 10;
     if (windowBeats.length >= 3) score += 8;
+
+    if (styleProfile) {
+      let styleScore = 0;
+      if (styleProfile.cutsPerMinute != null && windowScenes.length > 0) {
+        const localCutsPerMin = (windowScenes.length / reelDuration) * 60;
+        const cutDiff = Math.abs(localCutsPerMin - styleProfile.cutsPerMinute);
+        const maxCutDiff = Math.max(styleProfile.cutsPerMinute, 1);
+        styleScore += 20 * (1 - Math.min(1, cutDiff / maxCutDiff));
+      }
+      if (styleProfile.motionIntensity != null && avgMotion > 0) {
+        const localMotion = avgMotion * 100;
+        const motionDiff = Math.abs(localMotion - styleProfile.motionIntensity);
+        styleScore += 15 * (1 - Math.min(1, motionDiff / Math.max(styleProfile.motionIntensity, 10)));
+      }
+      score += styleScore;
+    }
 
     candidates.push({ start: Math.max(0, start), end: Math.min(totalDuration, end), score });
   }
@@ -509,7 +525,7 @@ function extractThumbnail(videoPath, outputPath) {
 }
 
 async function generateReels(options) {
-  const { videoPath, outputDir, count, reelDuration, onProgress } = options;
+  const { videoPath, outputDir, count, reelDuration, onProgress, styleProfile } = options;
   const editOpts = options.editOptions || {};
 
   if (!fs.existsSync(videoPath)) {
@@ -538,12 +554,9 @@ async function generateReels(options) {
   if (transcript.segments.length > 0 && process.env.ENABLE_AI_HIGHLIGHTS !== 'false') {
     try {
       onProgress(10, 'selecting highlights with AI');
-      const aiHighlights = await highlightAIService.selectHighlightsWithAI({
-        transcript,
-        totalDuration,
-        count,
-        reelDuration
-      });
+      const aiOptions = { transcript, totalDuration, count, reelDuration };
+      if (styleProfile) aiOptions.styleProfile = styleProfile;
+      const aiHighlights = await highlightAIService.selectHighlightsWithAI(aiOptions);
 
       if (aiHighlights.length > 0) {
         console.log(`AI selected ${aiHighlights.length} highlights based on transcript`);
@@ -563,7 +576,7 @@ async function generateReels(options) {
   }
 
   if (!highlights) {
-    highlights = scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration);
+    highlights = scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile);
   }
 
   if (highlights.length === 0) {
@@ -917,5 +930,5 @@ async function generateReelsWithReference(options) {
   return results;
 }
 
-module.exports = { generateReels, generateReelsWithReference, packageAsZip, concatenateClips, sliceCropPath, buildCropExpression };
+module.exports = { generateReels, generateReelsWithReference, packageAsZip, concatenateClips, sliceCropPath, buildCropExpression, getDuration, getInputDimensions, detectScenes, getFfmpegPath };
 
