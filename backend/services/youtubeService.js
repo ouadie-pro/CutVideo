@@ -166,7 +166,7 @@ async function getInfoWithYtDlp(url) {
 
     const ffmpegPath = resolveFfmpegPath();
     if (ffmpegPath) {
-      args.push('--ffmpeg-location', ffmpegPath);
+      args.push('--ffmpeg-location', path.dirname(path.resolve(ffmpegPath)));
     }
 
     console.log(`Executing: "${cmd}" ${args.join(' ')}`);
@@ -297,7 +297,7 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
 
     const ffmpegPath = resolveFfmpegPath();
     if (ffmpegPath) {
-      args.push('--ffmpeg-location', path.resolve(ffmpegPath));
+      args.push('--ffmpeg-location', path.dirname(path.resolve(ffmpegPath)));
     } else {
       const err = new Error('FFmpeg not found. The project requires FFmpeg for video processing. Please ensure ffmpeg-static is properly installed.');
       console.error(err.message);
@@ -308,7 +308,7 @@ async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime
 
     console.log(`[yt-dlp] Executing: "${cmd}" ${args.join(' ')}`);
     console.log(`[yt-dlp] Output path (resolved): ${resolvedOutputPath}`);
-    console.log(`[yt-dlp] FFmpeg location: ${path.resolve(ffmpegPath)}`);
+    console.log(`[yt-dlp] FFmpeg location: ${path.dirname(path.resolve(ffmpegPath))}`);
     console.log(`[yt-dlp] Start time: ${new Date().toISOString()}`);
 
     const startTimeMs = Date.now();

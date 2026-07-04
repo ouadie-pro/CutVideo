@@ -5,9 +5,22 @@ const ffmpeg = require('fluent-ffmpeg');
 const archiver = require('archiver');
 
 const ffmpegStatic = require('ffmpeg-static');
-const { path: ffprobeStaticPath } = require('ffprobe-static');
+const ffprobeStatic = require('ffprobe-static');
 if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
-if (ffprobeStaticPath) ffmpeg.setFfprobePath(ffprobeStaticPath);
+if (ffprobeStatic && ffprobeStatic.path) ffmpeg.setFfprobePath(ffprobeStatic.path);
+
+// Ensure ffprobe.exe exists alongside ffmpeg-static for yt-dlp compatibility
+try {
+  if (ffmpegStatic && ffprobeStatic && ffprobeStatic.path) {
+    const ffmpegDir = path.dirname(ffmpegStatic);
+    const ffprobeDest = path.join(ffmpegDir, 'ffprobe.exe');
+    if (!fs.existsSync(ffprobeDest) && fs.existsSync(ffprobeStatic.path)) {
+      fs.copyFileSync(ffprobeStatic.path, ffprobeDest);
+    }
+  }
+} catch (e) {
+  // non-critical
+}
 
 const transcriptionService = require('./transcriptionService');
 const highlightAIService = require('./highlightAIService');
@@ -22,6 +35,21 @@ function getFfmpegPath() {
     if (p) return p;
   } catch {}
   return 'ffmpeg';
+}
+
+function getFfprobePath() {
+  // Derive from ffmpeg-static path (same directory)
+  const ff = getFfmpegPath();
+  if (ff && ff !== 'ffmpeg') {
+    const candidate = ff.replace(/ffmpeg(\.exe)?$/i, 'ffprobe$1');
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  // Fall back to ffprobe-static
+  try {
+    const ffprobe = require('ffprobe-static');
+    if (ffprobe && ffprobe.path && fs.existsSync(ffprobe.path)) return ffprobe.path;
+  } catch {}
+  return 'ffprobe';
 }
 
 function getInputDimensions(videoPath) {
@@ -62,7 +90,7 @@ function getDuration(videoPath) {
   });
 }
 
-function detectScenes(videoPath) {
+function detectScenes(videoPath, videoDuration) {
   return new Promise((resolve) => {
     const timestamps = [];
     const ff = getFfmpegPath();
@@ -71,16 +99,24 @@ function detectScenes(videoPath) {
       '-vf', "select='gt(scene,0.3)',showinfo",
       '-f', 'null', '-'
     ];
-    console.log(`FFmpeg detectScenes: "${ff}" ${args.join(' ')}`);
+    const startTs = Date.now();
+    const timeoutMs = Math.max(30 * 60 * 1000, (videoDuration || 600) * 3 * 1000);
+    console.log(`[detectScenes] Input: ${videoPath}`);
+    console.log(`[detectScenes] FFmpeg: ${ff}`);
+    console.log(`[detectScenes] Args: ${args.join(' ')}`);
+    console.log(`[detectScenes] Timeout: ${timeoutMs}ms (${(timeoutMs/1000/60).toFixed(1)}min)`);
     const proc = spawn(ff, args, { windowsHide: true });
+    let stderr = '';
 
     const timer = setTimeout(() => {
-      console.warn('detectScenes timed out, killing process');
+      console.warn(`[detectScenes] Timed out after ${timeoutMs}ms, killing process`);
+      console.error(`[detectScenes] Partial stderr:\n${stderr.slice(-2000)}`);
       proc.kill();
       resolve([]);
-    }, 5 * 60 * 1000);
+    }, timeoutMs);
 
     proc.stderr.on('data', (data) => {
+      stderr += data.toString();
       const regex = /pts_time:([\d.]+)/g;
       let m;
       while ((m = regex.exec(data.toString())) !== null) {
@@ -88,19 +124,25 @@ function detectScenes(videoPath) {
       }
     });
 
-    proc.on('close', () => {
+    proc.on('close', (code) => {
       clearTimeout(timer);
+      const elapsed = Date.now() - startTs;
+      console.log(`[detectScenes] Completed in ${elapsed}ms (${(elapsed/1000).toFixed(1)}s), exit code: ${code}, scenes: ${timestamps.length}`);
+      if (code !== 0) {
+        console.warn(`[detectScenes] Non-zero exit. Stderr:\n${stderr.slice(-1000)}`);
+      }
       resolve(timestamps);
     });
     proc.on('error', (err) => {
       clearTimeout(timer);
-      console.warn('detectScenes error:', err.message);
+      console.error(`[detectScenes] Spawn error: ${err.message}`);
+      console.error(`[detectScenes] Stderr:\n${stderr.slice(-1000)}`);
       resolve([]);
     });
   });
 }
 
-function detectSilence(videoPath) {
+function detectSilence(videoPath, videoDuration) {
   return new Promise((resolve) => {
     const intervals = [];
     let current = null;
@@ -110,16 +152,24 @@ function detectSilence(videoPath) {
       '-af', 'silencedetect=n=-30dB:d=0.5',
       '-f', 'null', '-'
     ];
-    console.log(`FFmpeg detectSilence: "${ff}" ${args.join(' ')}`);
+    const startTs = Date.now();
+    const timeoutMs = Math.max(30 * 60 * 1000, (videoDuration || 600) * 3 * 1000);
+    console.log(`[detectSilence] Input: ${videoPath}`);
+    console.log(`[detectSilence] FFmpeg: ${ff}`);
+    console.log(`[detectSilence] Args: ${args.join(' ')}`);
+    console.log(`[detectSilence] Timeout: ${timeoutMs}ms (${(timeoutMs/1000/60).toFixed(1)}min)`);
     const proc = spawn(ff, args, { windowsHide: true });
+    let stderr = '';
 
     const timer = setTimeout(() => {
-      console.warn('detectSilence timed out, killing process');
+      console.warn(`[detectSilence] Timed out after ${timeoutMs}ms, killing process`);
+      console.error(`[detectSilence] Partial stderr:\n${stderr.slice(-2000)}`);
       proc.kill();
       resolve([]);
-    }, 5 * 60 * 1000);
+    }, timeoutMs);
 
     proc.stderr.on('data', (data) => {
+      stderr += data.toString();
       for (const line of data.toString().split('\n')) {
         let m = line.match(/silence_start:\s+([\d.]+)/);
         if (m) current = { start: parseFloat(m[1]) };
@@ -132,19 +182,25 @@ function detectSilence(videoPath) {
       }
     });
 
-    proc.on('close', () => {
+    proc.on('close', (code) => {
       clearTimeout(timer);
+      const elapsed = Date.now() - startTs;
+      console.log(`[detectSilence] Completed in ${elapsed}ms (${(elapsed/1000).toFixed(1)}s), exit code: ${code}, silences: ${intervals.length}`);
+      if (code !== 0) {
+        console.warn(`[detectSilence] Non-zero exit. Stderr:\n${stderr.slice(-1000)}`);
+      }
       resolve(intervals);
     });
     proc.on('error', (err) => {
       clearTimeout(timer);
-      console.warn('detectSilence error:', err.message);
+      console.error(`[detectSilence] Spawn error: ${err.message}`);
+      console.error(`[detectSilence] Stderr:\n${stderr.slice(-1000)}`);
       resolve([]);
     });
   });
 }
 
-function detectMotion(videoPath) {
+function detectMotion(videoPath, videoDuration) {
   return new Promise((resolve) => {
     const motionScores = [];
     const ff = getFfmpegPath();
@@ -153,16 +209,24 @@ function detectMotion(videoPath) {
       '-vf', 'select=\'gt(scene,0.1)\',metadata=print:file=-',
       '-f', 'null', '-'
     ];
-    console.log(`FFmpeg detectMotion: "${ff}" ${args.join(' ')}`);
+    const startTs = Date.now();
+    const timeoutMs = Math.max(30 * 60 * 1000, (videoDuration || 600) * 3 * 1000);
+    console.log(`[detectMotion] Input: ${videoPath}`);
+    console.log(`[detectMotion] FFmpeg: ${ff}`);
+    console.log(`[detectMotion] Args: ${args.join(' ')}`);
+    console.log(`[detectMotion] Timeout: ${timeoutMs}ms (${(timeoutMs/1000/60).toFixed(1)}min)`);
     const proc = spawn(ff, args, { windowsHide: true });
+    let stderr = '';
 
     const timer = setTimeout(() => {
-      console.warn('detectMotion timed out, killing process');
+      console.warn(`[detectMotion] Timed out after ${timeoutMs}ms, killing process`);
+      console.error(`[detectMotion] Partial stderr:\n${stderr.slice(-2000)}`);
       proc.kill();
       resolve([]);
-    }, 5 * 60 * 1000);
+    }, timeoutMs);
 
     proc.stderr.on('data', (data) => {
+      stderr += data.toString();
       const text = data.toString();
       const lines = text.split('\n');
       for (const line of lines) {
@@ -176,19 +240,25 @@ function detectMotion(videoPath) {
       }
     });
 
-    proc.on('close', () => {
+    proc.on('close', (code) => {
       clearTimeout(timer);
+      const elapsed = Date.now() - startTs;
+      console.log(`[detectMotion] Completed in ${elapsed}ms (${(elapsed/1000).toFixed(1)}s), exit code: ${code}, motion pts: ${motionScores.length}`);
+      if (code !== 0) {
+        console.warn(`[detectMotion] Non-zero exit. Stderr:\n${stderr.slice(-1000)}`);
+      }
       resolve(motionScores);
     });
     proc.on('error', (err) => {
       clearTimeout(timer);
-      console.warn('detectMotion error:', err.message);
+      console.error(`[detectMotion] Spawn error: ${err.message}`);
+      console.error(`[detectMotion] Stderr:\n${stderr.slice(-1000)}`);
       resolve([]);
     });
   });
 }
 
-function detectAudioBeats(videoPath) {
+function detectAudioBeats(videoPath, videoDuration) {
   return new Promise((resolve) => {
     const beatPoints = [];
     const ff = getFfmpegPath();
@@ -197,17 +267,25 @@ function detectAudioBeats(videoPath) {
       '-af', 'astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-',
       '-f', 'null', '-'
     ];
-    console.log(`FFmpeg detectAudioBeats: "${ff}" ${args.join(' ')}`);
+    const startTs = Date.now();
+    const timeoutMs = Math.max(30 * 60 * 1000, (videoDuration || 600) * 3 * 1000);
+    console.log(`[detectAudioBeats] Input: ${videoPath}`);
+    console.log(`[detectAudioBeats] FFmpeg: ${ff}`);
+    console.log(`[detectAudioBeats] Args: ${args.join(' ')}`);
+    console.log(`[detectAudioBeats] Timeout: ${timeoutMs}ms (${(timeoutMs/1000/60).toFixed(1)}min)`);
     const proc = spawn(ff, args, { windowsHide: true });
+    let stderr = '';
 
     const timer = setTimeout(() => {
-      console.warn('detectAudioBeats timed out, killing process');
+      console.warn(`[detectAudioBeats] Timed out after ${timeoutMs}ms, killing process`);
+      console.error(`[detectAudioBeats] Partial stderr:\n${stderr.slice(-2000)}`);
       proc.kill();
       resolve([]);
-    }, 5 * 60 * 1000);
+    }, timeoutMs);
 
     let prevRMS = 0;
     proc.stderr.on('data', (data) => {
+      stderr += data.toString();
       const text = data.toString();
       const lines = text.split('\n');
       for (const line of lines) {
@@ -223,13 +301,19 @@ function detectAudioBeats(videoPath) {
       }
     });
 
-    proc.on('close', () => {
+    proc.on('close', (code) => {
       clearTimeout(timer);
+      const elapsed = Date.now() - startTs;
+      console.log(`[detectAudioBeats] Completed in ${elapsed}ms (${(elapsed/1000).toFixed(1)}s), exit code: ${code}, beats: ${beatPoints.length}`);
+      if (code !== 0) {
+        console.warn(`[detectAudioBeats] Non-zero exit. Stderr:\n${stderr.slice(-1000)}`);
+      }
       resolve(beatPoints);
     });
     proc.on('error', (err) => {
       clearTimeout(timer);
-      console.warn('detectAudioBeats error:', err.message);
+      console.error(`[detectAudioBeats] Spawn error: ${err.message}`);
+      console.error(`[detectAudioBeats] Stderr:\n${stderr.slice(-1000)}`);
       resolve([]);
     });
   });
@@ -401,42 +485,70 @@ function buildCropExpression(cropPath, clipDuration, sourceWidth, sourceHeight) 
   return `crop=1080:1920:${escapedX}:${escapedY}`;
 }
 
+async function processQueue(tasks, concurrency = 2) {
+  const executing = [];
+  
+  for (const task of tasks) {
+    const promise = task().then(result => {
+      executing.splice(executing.indexOf(promise), 1);
+      return result;
+    });
+    
+    executing.push(promise);
+    
+    if (executing.length >= concurrency) {
+      await Promise.race(executing);
+    }
+  }
+  
+  return Promise.all(executing);
+}
+
 function runFfmpegEncode(inputPath, outputPath, startTime, duration, onProgress, editOptions) {
   return new Promise((resolve, reject) => {
-    if (!fs.existsSync(inputPath)) {
-      return reject(new Error(`Source video not found: ${inputPath}`));
+    const resolvedInput = path.resolve(inputPath);
+    const resolvedOutput = path.resolve(outputPath);
+    const outputDir = path.dirname(resolvedOutput);
+    const opts = editOptions || {};
+
+    // --- Pre-validation ---
+    if (!fs.existsSync(resolvedInput)) {
+      return reject(new Error(`Source video not found: ${resolvedInput}`));
     }
 
-    const resolvedInputPath = path.resolve(inputPath);
-    const resolvedOutputPath = path.resolve(outputPath);
-    const outputDir = path.dirname(resolvedOutputPath);
-
     if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-      console.log(`[reels] Created output directory: ${outputDir}`);
+      try {
+        fs.mkdirSync(outputDir, { recursive: true });
+      } catch (e) {
+        return reject(new Error(`Failed to create output directory ${outputDir}: ${e.message}`));
+      }
+    }
+
+    try {
+      fs.accessSync(outputDir, fs.constants.W_OK);
+    } catch (e) {
+      return reject(new Error(`Output directory not writable: ${outputDir} - ${e.message}`));
+    }
+
+    const outName = path.basename(resolvedOutput);
+    if (/[<>:"|?*]/.test(outName.replace(/\.mp4$/i, ''))) {
+      return reject(new Error(`Output filename contains illegal characters: ${outName}`));
     }
 
     const ffmpegExe = getFfmpegPath();
-    console.log(`[reels] Input: ${resolvedInputPath}`);
-    console.log(`[reels] Output: ${resolvedOutputPath}`);
-    console.log(`[reels] FFmpeg: ${ffmpegExe}`);
-    console.log(`[reels] Start: ${startTime}s, Duration: ${duration}s`);
 
-    const opts = editOptions || {};
-
+    // --- Build filter chain ---
     const cropPath = opts.cropPath || null;
     const assPath = opts.assPath || null;
     const useKenBurns = opts.kenBurns === true;
     const useLoudnorm = opts.loudnorm !== false;
 
     const videoFilters = [];
-
     videoFilters.push("scale='if(gt(dar,9/16),-2,1080)':'if(gt(dar,9/16),1920,-2)'");
 
     if (cropPath && cropPath.length > 0) {
-      const dims = getInputDimensionsSync(resolvedInputPath);
-      const cropExpr = buildCropExpression(cropPath, duration, dims.width, dims.height);
-      videoFilters.push(cropExpr);
+      const dims = getInputDimensionsSync(resolvedInput);
+      videoFilters.push(buildCropExpression(cropPath, duration, dims.width, dims.height));
     } else {
       videoFilters.push('crop=1080:1920');
     }
@@ -444,68 +556,103 @@ function runFfmpegEncode(inputPath, outputPath, startTime, duration, onProgress,
     if (useKenBurns) {
       const zoomEnd = 1.08;
       const zoomRange = zoomEnd - 1.0;
-      const kbScaleExpr = escapeFfmpegFilterArg(`(${1.0}+${zoomRange}*t/${duration})`);
-      const kbCropXExpr = escapeFfmpegFilterArg(`(iw*${zoomEnd}-1080)/2`);
-      const kbCropYExpr = escapeFfmpegFilterArg(`(ih*${zoomEnd}-1920)/2`);
       videoFilters.push(
-        `scale=iw*${kbScaleExpr}:ih*${kbScaleExpr}:flags=bilinear,crop=1080:1920:${kbCropXExpr}:${kbCropYExpr}`
+        `scale=iw*(${1.0}+${zoomRange}*t/${duration}):ih*(${1.0}+${zoomRange}*t/${duration}):flags=bilinear,crop=1080:1920:(iw*${zoomEnd}-1080)/2:(ih*${zoomEnd}-1920)/2`
       );
     }
 
     if (assPath && fs.existsSync(assPath)) {
-      const normalizedAssPath = escapeFfmpegFilterArg(assPath.replace(/\\/g, '/'));
-      videoFilters.push(`ass='${normalizedAssPath}'`);
+      // Escape colons in path for ffmpeg filter syntax, convert backslashes
+      const escaped = assPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+      videoFilters.push(`ass=${escaped}`);
     }
 
-    const outputOpts = [
-      '-vf', videoFilters.join(','),
+    const filterChain = videoFilters.join(',');
+
+    // --- Build arguments ---
+    const args = [
+      '-ss', String(startTime),
+      '-i', resolvedInput,
+      '-t', String(duration),
+      '-vf', filterChain,
+      '-c:v', 'libx264',
+      '-c:a', 'aac',
       '-preset', 'fast',
       '-pix_fmt', 'yuv420p',
       '-movflags', '+faststart'
     ];
 
-    if (useLoudnorm && !opts._loudnormSkipped) {
-      outputOpts.push('-af', 'loudnorm=I=-16:TP=-1.5:LRA=11');
+    if (useLoudnorm) {
+      args.push('-af', 'loudnorm=I=-16:TP=-1.5:LRA=11');
     }
 
-    const cmd = ffmpeg(resolvedInputPath)
-      .seekInput(startTime)
-      .duration(duration)
-      .videoCodec('libx264')
-      .audioCodec('aac')
-      .outputOptions(outputOpts);
+    args.push('-y', resolvedOutput);
 
-    cmd.on('start', (commandLine) => {
-      console.log(`[reels] FFmpeg command: ${commandLine}`);
-    });
+    // --- Logging ---
+    const startTs = Date.now();
+    console.log(`[encode] ==============================`);
+    console.log(`[encode] Input: ${resolvedInput}`);
+    console.log(`[encode] Output: ${resolvedOutput}`);
+    console.log(`[encode] FFmpeg: ${ffmpegExe}`);
+    console.log(`[encode] Working dir: ${process.cwd()}`);
+    console.log(`[encode] Start time: ${startTime}s`);
+    console.log(`[encode] Duration: ${duration}s`);
+    console.log(`[encode] Args: ${args.join(' ')}`);
 
-    if (onProgress) {
-      cmd.on('stderr', (line) => {
-        const m = line.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+    // --- Spawn ---
+    const proc = spawn(ffmpegExe, args, { windowsHide: true });
+    let stderrBuf = '';
+    let settled = false;
+
+    const dynamicTimeout = Math.max(10 * 60 * 1000, duration * 4 * 1000);
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      console.error(`[encode] Timed out after ${(dynamicTimeout / 1000).toFixed(0)}s`);
+      console.error(`[encode] Partial stderr:\n${stderrBuf.slice(-3000)}`);
+      proc.kill();
+      reject(new Error(`Reel encode timed out after ${(dynamicTimeout / 1000).toFixed(0)}s`));
+    }, dynamicTimeout);
+
+    proc.stderr.on('data', (d) => {
+      const text = d.toString();
+      stderrBuf += text;
+      if (onProgress) {
+        const m = text.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
         if (m) {
           const secs = parseInt(m[1]) * 3600 + parseInt(m[2]) * 60 + parseInt(m[3]);
           onProgress(Math.min(100, Math.round((secs / duration) * 100)));
         }
-      });
-    }
-
-    cmd.on('end', () => {
-      console.log(`[reels] Encoding completed: ${resolvedOutputPath}`);
-      if (!fs.existsSync(resolvedOutputPath)) {
-        return reject(new Error(`Output file not created: ${resolvedOutputPath}`));
       }
-      resolve(resolvedOutputPath);
-    });
-    cmd.on('error', (err) => {
-      console.error(`[reels] Encoding failed: ${err.message}`);
-      reject(new Error(`Reel encode error: ${err.message}`));
     });
 
-    const timeout = setTimeout(() => { cmd.kill(); reject(new Error('Reel encode timeout after 5 minutes')); }, 5 * 60 * 1000);
-    cmd.on('end', () => clearTimeout(timeout));
-    cmd.on('error', () => clearTimeout(timeout));
+    proc.on('close', (code) => {
+      if (settled) return;
+      clearTimeout(timer);
+      const elapsed = Date.now() - startTs;
+      console.log(`[encode] Exit code: ${code}, elapsed: ${(elapsed / 1000).toFixed(1)}s`);
 
-    cmd.save(resolvedOutputPath);
+      if (code === 0 && fs.existsSync(resolvedOutput)) {
+        const outStat = fs.statSync(resolvedOutput);
+        console.log(`[encode] Output created: ${resolvedOutput} (${(outStat.size / 1024 / 1024).toFixed(1)}MB)`);
+        settled = true;
+        resolve(resolvedOutput);
+      } else {
+        settled = true;
+        console.error(`[encode] FAILED (exit ${code})`);
+        console.error(`[encode] Full stderr:\n${stderrBuf}`);
+        const reason = stderrBuf.slice(-1500);
+        reject(new Error(`Reel encode failed (exit ${code}). Stderr: ${reason}`));
+      }
+    });
+
+    proc.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      console.error(`[encode] Spawn error: ${err.message}`);
+      reject(new Error(`Reel encode spawn error: ${err.message}`));
+    });
   });
 }
 
@@ -523,56 +670,152 @@ function createVerticalClip(inputPath, outputPath, startTime, duration, onProgre
 
 function extractThumbnail(videoPath, outputPath) {
   return new Promise((resolve) => {
-    if (!fs.existsSync(videoPath)) {
-      return resolve(null);
-    }
-    const cmd = ffmpeg(videoPath)
-      .seekInput('00:00:01')
-      .frames(1)
-      .outputOptions('-q:v', '5')
-      .output(outputPath);
+    if (!fs.existsSync(videoPath)) return resolve(null);
 
-    cmd.on('start', (commandLine) => {
-      console.log(`FFmpeg extractThumbnail: ${commandLine}`);
-    });
+    const ff = getFfmpegPath();
+    const args = [
+      '-ss', '00:00:01',
+      '-i', videoPath,
+      '-vframes', '1',
+      '-q:v', '5',
+      '-y', outputPath
+    ];
+    console.log(`[thumbnail] ${ff} ${args.join(' ')}`);
 
-    cmd.on('end', () => {
-      if (fs.existsSync(outputPath)) {
+    const proc = spawn(ff, args, { windowsHide: true });
+    let stderrBuf = '';
+
+    const timer = setTimeout(() => { proc.kill(); resolve(null); }, 60 * 1000);
+
+    proc.stderr.on('data', (d) => { stderrBuf += d.toString(); });
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0 && fs.existsSync(outputPath)) {
         resolve(outputPath);
       } else {
+        if (code !== 0) console.warn(`[thumbnail] Failed (exit ${code}): ${stderrBuf.slice(-300)}`);
         resolve(null);
       }
     });
-    cmd.on('error', () => resolve(null));
-
-    const timeout = setTimeout(() => { cmd.kill(); resolve(null); }, 60 * 1000);
-    cmd.on('end', () => clearTimeout(timeout));
-    cmd.on('error', () => clearTimeout(timeout));
-
-    cmd.save(outputPath);
+    proc.on('error', () => { clearTimeout(timer); resolve(null); });
   });
+}
+
+async function validateVideoForReels(videoPath, outputDir) {
+  console.log(`[validation] Starting pre-validation for ${videoPath}`);
+
+  // 1. Source video exists
+  if (!fs.existsSync(videoPath)) {
+    throw new Error(`Source video not found: ${videoPath}`);
+  }
+
+  const stats = fs.statSync(videoPath);
+  const fileSizeMB = stats.size / (1024 * 1024);
+  console.log(`[validation] Source size: ${fileSizeMB.toFixed(2)}MB`);
+
+  if (fileSizeMB < 0.1) {
+    throw new Error(`Source video too small: ${fileSizeMB.toFixed(2)}MB`);
+  }
+
+  // 2. Output directory exists and writable
+  if (!fs.existsSync(outputDir)) {
+    try {
+      fs.mkdirSync(outputDir, { recursive: true });
+      console.log(`[validation] Created output dir: ${outputDir}`);
+    } catch (e) {
+      throw new Error(`Failed to create output directory ${outputDir}: ${e.message}`);
+    }
+  }
+
+  try {
+    fs.accessSync(outputDir, fs.constants.W_OK);
+    console.log(`[validation] Output dir writable: ${outputDir}`);
+  } catch (e) {
+    throw new Error(`Output directory not writable: ${outputDir} - ${e.message}`);
+  }
+
+  // 3. Check free disk space (need at least 2x source file)
+  const tmpDir = path.dirname(outputDir);
+  try {
+    const { execSync } = require('child_process');
+    const dfOut = execSync(`fsutil volume diskfree "${tmpDir}"`, { encoding: 'utf-8', timeout: 5000 });
+    const freeMatch = dfOut.match(/Total free bytes\s+:\s+(\d+)/i);
+    if (freeMatch) {
+      const freeBytes = parseInt(freeMatch[1]);
+      const freeGB = freeBytes / (1024 * 1024 * 1024);
+      console.log(`[validation] Free disk space: ${freeGB.toFixed(2)}GB`);
+      if (freeBytes < stats.size * 2) {
+        throw new Error(`Insufficient disk space. Need ${(stats.size * 2 / 1024/1024/1024).toFixed(1)}GB, have ${freeGB.toFixed(1)}GB`);
+      }
+    }
+  } catch (e) {
+    if (e.message && e.message.includes('Insufficient disk')) throw e;
+    console.warn(`[validation] Could not check disk space: ${e.message}`);
+  }
+
+  // 4. FFmpeg executable
+  const ffmpegExe = getFfmpegPath();
+  console.log(`[validation] FFmpeg: ${ffmpegExe}`);
+  if (!fs.existsSync(ffmpegExe)) {
+    throw new Error(`FFmpeg not found: ${ffmpegExe}`);
+  }
+
+  // 5. FFprobe executable
+  const ffprobeExe = getFfprobePath();
+  console.log(`[validation] FFprobe: ${ffprobeExe}`);
+  if (!fs.existsSync(ffprobeExe)) {
+    throw new Error(`FFprobe not found: ${ffprobeExe}`);
+  }
+
+  // 6. Verify ffprobe works
+  try {
+    const { execFileSync } = require('child_process');
+    execFileSync(ffprobeExe, ['-version'], { stdio: 'pipe', timeout: 5000 });
+    console.log(`[validation] FFprobe works`);
+  } catch (e) {
+    throw new Error(`FFprobe execution failed: ${e.message}`);
+  }
+
+  // 7. Duration
+  const duration = await getDuration(videoPath);
+  console.log(`[validation] Duration: ${duration.toFixed(2)}s`);
+  if (!duration || duration < 5) {
+    throw new Error(`Video too short or invalid: ${duration?.toFixed(2)}s (minimum 5s)`);
+  }
+
+  // 8. Resolution / codec
+  const dims = await getInputDimensions(videoPath);
+  console.log(`[validation] Resolution: ${dims.width}x${dims.height}`);
+  if (dims.width < 480 || dims.height < 480) {
+    throw new Error(`Video resolution too low: ${dims.width}x${dims.height} (minimum 480x480)`);
+  }
+
+  // 9. Temp dir writable
+  try {
+    fs.accessSync(tmpDir, fs.constants.W_OK);
+  } catch (e) {
+    throw new Error(`Temp directory not writable: ${tmpDir} - ${e.message}`);
+  }
+
+  console.log(`[validation] PASSED`);
+  return { duration, dimensions: dims };
 }
 
 async function generateReels(options) {
   const { videoPath, outputDir, count, reelDuration, onProgress, styleProfile } = options;
   const editOpts = options.editOptions || {};
 
-  if (!fs.existsSync(videoPath)) {
-    throw new Error(`Source video not found: ${videoPath}`);
-  }
-
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
+  await validateVideoForReels(videoPath, outputDir);
 
   onProgress(0, 'analyzing video');
 
-  const [totalDuration, scenes, silences, motionScores, audioBeats] = await Promise.all([
-    getDuration(videoPath),
-    detectScenes(videoPath),
-    detectSilence(videoPath),
-    detectMotion(videoPath),
-    detectAudioBeats(videoPath)
+  const totalDuration = await getDuration(videoPath);
+
+  const [scenes, silences, motionScores, audioBeats] = await Promise.all([
+    detectScenes(videoPath, totalDuration),
+    detectSilence(videoPath, totalDuration),
+    detectMotion(videoPath, totalDuration),
+    detectAudioBeats(videoPath, totalDuration)
   ]);
 
   let highlights = null;
@@ -619,84 +862,86 @@ async function generateReels(options) {
     fullCropPath = await smartCropService.computeCropPath(videoPath);
   }
 
-  const promises = highlights.map(async (h, i) => {
-    const idx = i + 1;
-    const reelPath = path.resolve(outputDir, `reel_${idx}.mp4`);
-    const thumbPath = path.resolve(outputDir, `thumb_${idx}.jpg`);
+  const tasks = highlights.map((h, i) => {
+    return async () => {
+      const idx = i + 1;
+      const reelPath = path.resolve(outputDir, `reel_${idx}.mp4`);
+      const thumbPath = path.resolve(outputDir, `thumb_${idx}.jpg`);
 
-    try {
-      console.log(`Generating reel ${idx}/${highlights.length} (start=${h.start}s, duration=${reelDuration}s)`);
-
-      const clipEditOpts = {};
-
-      if (fullCropPath) {
-        clipEditOpts.cropPath = sliceCropPath(fullCropPath, h.start, reelDuration);
-      }
-
-      if (editOpts.kenBurns !== false) {
-        const windowScenes = scenes.filter(s => s >= h.start && s <= h.start + reelDuration);
-        clipEditOpts.kenBurns = windowScenes.length < 2;
-      } else {
-        clipEditOpts.kenBurns = false;
-      }
-
-      clipEditOpts.loudnorm = editOpts.loudnorm !== false;
-
-      let assPath = null;
-      if (editOpts.captions !== false) {
-        onProgress(
-          20 + Math.round((i / highlights.length) * 15),
-          'adding captions'
-        );
-        assPath = path.resolve(outputDir, `captions_${idx}.ass`);
-        const captionResult = await captionService.generateCaptionFile(transcript, assPath, { start: h.start, end: h.start + reelDuration });
-        if (captionResult) {
-          clipEditOpts.assPath = captionResult;
-        }
-      }
-
-      await createVerticalClip(videoPath, reelPath, h.start, reelDuration, null, clipEditOpts);
-
-      if (!fs.existsSync(reelPath)) {
-        throw new Error(`Output file not found after encoding: ${reelPath}`);
-      }
-
-      let thumbnail = null;
       try {
-        const result = await extractThumbnail(reelPath, thumbPath);
-        if (result && fs.existsSync(thumbPath)) {
-          thumbnail = thumbPath;
+        console.log(`Generating reel ${idx}/${highlights.length} (start=${h.start}s, duration=${reelDuration}s)`);
+
+        const clipEditOpts = {};
+
+        if (fullCropPath) {
+          clipEditOpts.cropPath = sliceCropPath(fullCropPath, h.start, reelDuration);
         }
-      } catch (thumbErr) {
-        console.warn(`Thumbnail extraction failed for reel ${idx}: ${thumbErr.message}`);
-      }
 
-      if (assPath && fs.existsSync(assPath)) {
-        try { fs.unlinkSync(assPath); } catch {}
-      }
+        if (editOpts.kenBurns !== false) {
+          const windowScenes = scenes.filter(s => s >= h.start && s <= h.start + reelDuration);
+          clipEditOpts.kenBurns = windowScenes.length < 2;
+        } else {
+          clipEditOpts.kenBurns = false;
+        }
 
-      return {
-        index: idx,
-        path: reelPath,
-        thumbnail,
-        filename: `reel_${idx}.mp4`,
-        startTime: h.start,
-        title: h.title,
-        reason: h.reason
-      };
-    } catch (err) {
-      console.error(`Reel ${idx} generation failed: ${err.message}`);
-      return null;
-    }
+        clipEditOpts.loudnorm = editOpts.loudnorm !== false;
+
+        let assPath = null;
+        if (editOpts.captions !== false) {
+          onProgress(
+            20 + Math.round((i / highlights.length) * 15),
+            'adding captions'
+          );
+          assPath = path.resolve(outputDir, `captions_${idx}.ass`);
+          const captionResult = await captionService.generateCaptionFile(transcript, assPath, { start: h.start, end: h.start + reelDuration });
+          if (captionResult) {
+            clipEditOpts.assPath = captionResult;
+          }
+        }
+
+        await createVerticalClip(videoPath, reelPath, h.start, reelDuration, null, clipEditOpts);
+
+        if (!fs.existsSync(reelPath)) {
+          throw new Error(`Output file not found after encoding: ${reelPath}`);
+        }
+
+        let thumbnail = null;
+        try {
+          const result = await extractThumbnail(reelPath, thumbPath);
+          if (result && fs.existsSync(thumbPath)) {
+            thumbnail = thumbPath;
+          }
+        } catch (thumbErr) {
+          console.warn(`Thumbnail extraction failed for reel ${idx}: ${thumbErr.message}`);
+        }
+
+        if (assPath && fs.existsSync(assPath)) {
+          try { fs.unlinkSync(assPath); } catch {}
+        }
+
+        return {
+          index: idx,
+          path: reelPath,
+          thumbnail,
+          filename: `reel_${idx}.mp4`,
+          startTime: h.start,
+          title: h.title,
+          reason: h.reason
+        };
+      } catch (err) {
+        console.error(`Reel ${idx} generation failed: ${err.message}`);
+        return null;
+      }
+    };
   });
 
-  const results = await Promise.allSettled(promises);
+  const results = await processQueue(tasks, 2);
 
   const reels = [];
   for (let i = 0; i < results.length; i++) {
     const r = results[i];
-    if (r.status === 'fulfilled' && r.value) {
-      reels.push(r.value);
+    if (r) {
+      reels.push(r);
     }
     onProgress(Math.round(((i + 1) / results.length) * 100), `creating reel ${Math.min(i + 1, results.length)}/${count}`);
   }
@@ -812,7 +1057,7 @@ function matchHighlightsToReference(totalDuration, scenes, silences, motionScore
 function concatenateClips(clipPaths, outputPath) {
   return new Promise((resolve, reject) => {
     const dir = path.dirname(outputPath);
-    const concatFile = path.join(dir, 'concat_list.txt');
+    const concatFile = path.resolve(dir, 'concat_list.txt');
 
     const lines = clipPaths.map(p => {
       const normalized = p.replace(/\\/g, '/');
@@ -826,30 +1071,37 @@ function concatenateClips(clipPaths, outputPath) {
       '-safe', '0',
       '-i', concatFile,
       '-c', 'copy',
-      outputPath
+      '-y', outputPath
     ];
+    const startTs = Date.now();
+    console.log(`[concat] ${ff} ${args.join(' ')}`);
 
     const proc = spawn(ff, args, { windowsHide: true });
-    let stderr = '';
+    let stderrBuf = '';
 
-    proc.stderr.on('data', (data) => { stderr += data.toString(); });
+    proc.stderr.on('data', (d) => { stderrBuf += d.toString(); });
+
+    const timeout = setTimeout(() => { proc.kill(); reject(new Error('Concat timed out')); }, 5 * 60 * 1000);
 
     proc.on('close', (code) => {
+      clearTimeout(timeout);
+      const elapsed = Date.now() - startTs;
       try { fs.unlinkSync(concatFile); } catch {}
+      console.log(`[concat] Exit code: ${code}, elapsed: ${(elapsed/1000).toFixed(1)}s`);
       if (code === 0 && fs.existsSync(outputPath)) {
+        console.log(`[concat] Output: ${outputPath}`);
         resolve(outputPath);
       } else {
-        reject(new Error(`Concat failed: ${stderr.slice(-200)}`));
+        console.error(`[concat] Failed (exit ${code}): ${stderrBuf.slice(-500)}`);
+        reject(new Error(`Concat failed (exit ${code}): ${stderrBuf.slice(-300)}`));
       }
     });
 
     proc.on('error', (err) => {
+      clearTimeout(timeout);
       try { fs.unlinkSync(concatFile); } catch {}
       reject(err);
     });
-
-    const timeout = setTimeout(() => { proc.kill(); reject(new Error('Concat timeout')); }, 5 * 60 * 1000);
-    proc.on('close', () => clearTimeout(timeout));
   });
 }
 
@@ -861,12 +1113,13 @@ async function generateReelsWithReference(options) {
 
   onProgress(0, 'analyzing video');
 
-  const [totalDuration, scenes, silences, motionScores, audioBeats] = await Promise.all([
-    getDuration(videoPath),
-    detectScenes(videoPath),
-    detectSilence(videoPath),
-    detectMotion(videoPath),
-    detectAudioBeats(videoPath)
+  const totalDuration = await getDuration(videoPath);
+
+  const [scenes, silences, motionScores, audioBeats] = await Promise.all([
+    detectScenes(videoPath, totalDuration),
+    detectSilence(videoPath, totalDuration),
+    detectMotion(videoPath, totalDuration),
+    detectAudioBeats(videoPath, totalDuration)
   ]);
 
   const reelGroups = matchHighlightsToReference(

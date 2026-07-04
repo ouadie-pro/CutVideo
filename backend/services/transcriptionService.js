@@ -237,9 +237,11 @@ async function transcribeWithLocal(videoPath) {
     const modelSize = process.env.WHISPER_MODEL || 'base';
 
     const result = await new Promise((resolve, reject) => {
-      const proc = spawn(pythonCmd, [scriptPath, tempAudio, modelSize], {
+      console.log(`transcriptionService: launching ${pythonCmd} -u ${scriptPath} ${tempAudio} ${modelSize}`);
+      const env = { ...process.env, PYTHONUNBUFFERED: '1', PYTHONFAULTHANDLER: '1' };
+      const proc = spawn(pythonCmd, ['-u', scriptPath, tempAudio, modelSize], {
         windowsHide: true,
-        timeout: 600000
+        env
       });
       let stdout = '';
       let stderr = '';
@@ -248,22 +250,35 @@ async function transcribeWithLocal(videoPath) {
 
       const timer = setTimeout(() => {
         proc.kill();
-        reject(new Error('Local transcription timed out after 10 minutes'));
+        reject(new Error(`Local transcription timed out after 10 minutes. Stderr: ${stderr.slice(-2000)}`));
       }, 600000);
 
       proc.on('close', (code) => {
         clearTimeout(timer);
+        console.log(`transcriptionService: transcribe.py exit code: ${code}`);
+        if (stdout) console.log(`transcriptionService: transcribe.py stdout: ${stdout.slice(0, 500)}`);
+        if (stderr) console.log(`transcriptionService: transcribe.py stderr: ${stderr.slice(0, 2000)}`);
+        console.log(`transcriptionService: audio path: ${tempAudio}, exists: ${require('fs').existsSync(tempAudio)}`);
+        console.log(`transcriptionService: python: ${pythonCmd}, version: N/A`);
+
         if (code === 0 && stdout) {
           try {
             resolve(JSON.parse(stdout));
           } catch {
-            reject(new Error(`transcribe.py: unparseable JSON: ${stdout.slice(200)}`));
+            reject(new Error(`transcribe.py: unparseable JSON. stdout: ${stdout.slice(0, 1000)}, stderr: ${stderr.slice(0, 1000)}`));
           }
+        } else if (code !== 0) {
+          const exitHex = (code >>> 0).toString(16);
+          reject(new Error(`transcribe.py exited with code ${code} (0x${exitHex}). Stderr: ${stderr.slice(0, 2000)}`));
         } else {
-          reject(new Error(`transcribe.py exited with code ${code}: ${stderr.slice(200)}`));
+          reject(new Error(`transcribe.py returned empty output. Stdout: , Stderr: ${stderr.slice(0, 1000)}`));
         }
       });
-      proc.on('error', reject);
+      proc.on('error', (err) => {
+        clearTimeout(timer);
+        console.error(`transcriptionService: transcribe.py process error: ${err.message}`);
+        reject(new Error(`transcribe.py process error: ${err.message}. Stderr: ${stderr.slice(0, 1000)}`));
+      });
     });
 
     if (!result || result.error) {

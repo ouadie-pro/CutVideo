@@ -8,12 +8,35 @@ const cutRoutes = require('./routes/cut');
 const reelsRoutes = require('./routes/reels');
 const referenceReelsRoutes = require('./routes/referenceReels');
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason instanceof Error ? reason.stack : reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err.stack);
+});
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 const tempDir = path.resolve(__dirname, process.env.TEMP_DIR || './temp');
 if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
+}
+
+// Ensure ffprobe exists next to ffmpeg-static so yt-dlp can find it
+try {
+  const ffmpegStaticPath = require('ffmpeg-static');
+  const ffprobeStatic = require('ffprobe-static');
+  if (ffmpegStaticPath && ffprobeStatic && ffprobeStatic.path) {
+    const ffmpegDir = path.dirname(ffmpegStaticPath);
+    const ffprobeDest = path.join(ffmpegDir, 'ffprobe.exe');
+    if (!fs.existsSync(ffprobeDest) && fs.existsSync(ffprobeStatic.path)) {
+      fs.copyFileSync(ffprobeStatic.path, ffprobeDest);
+      console.log(`Copied ffprobe to ffmpeg-static directory: ${ffprobeDest}`);
+    }
+  }
+} catch (e) {
+  console.warn('Could not copy ffprobe to ffmpeg-static directory:', e.message);
 }
 
 app.use(cors());

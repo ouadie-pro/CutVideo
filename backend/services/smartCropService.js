@@ -61,9 +61,10 @@ async function computeCropPath(inputVideoPath) {
     const pythonCmd = getPythonCmd();
 
     const result = await new Promise((resolve, reject) => {
-      const proc = spawn(pythonCmd, [scriptPath, inputVideoPath], {
+      const env = { ...process.env, PYTHONUNBUFFERED: '1' };
+      const proc = spawn(pythonCmd, ['-u', scriptPath, inputVideoPath], {
         windowsHide: true,
-        timeout: 60000
+        env
       });
       let stdout = '';
       let stderr = '';
@@ -73,7 +74,7 @@ async function computeCropPath(inputVideoPath) {
 
       const timer = setTimeout(() => {
         proc.kill();
-        reject(new Error('smart_crop.py timed out after 60s'));
+        reject(new Error(`smart_crop.py timed out after 60s. Stderr: ${stderr.slice(500)}`));
       }, 60000);
 
       proc.on('close', (code) => {
@@ -82,10 +83,10 @@ async function computeCropPath(inputVideoPath) {
           try {
             resolve(JSON.parse(stdout));
           } catch {
-            reject(new Error(`smart_crop.py: unparseable JSON output: ${stdout.slice(200)}`));
+            reject(new Error(`smart_crop.py: unparseable JSON. stdout: ${stdout.slice(0, 500)}, stderr: ${stderr.slice(0, 500)}`));
           }
         } else {
-          reject(new Error(`smart_crop.py exited with code ${code}: ${stderr.slice(200)}`));
+          reject(new Error(`smart_crop.py exited with code ${code}. Stderr: ${stderr.slice(0, 500)}`));
         }
       });
       proc.on('error', reject);

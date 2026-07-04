@@ -1,6 +1,9 @@
 import sys
 import json
 import os
+import faulthandler
+
+faulthandler.enable()
 
 try:
     from faster_whisper import WhisperModel
@@ -37,8 +40,9 @@ def main():
         full_text = " ".join(s["text"] for s in result_segments if s["text"])
 
         print(json.dumps({"segments": result_segments, "full_text": full_text}))
+        sys.stdout.flush()
     except Exception as e:
-        print(json.dumps({"error": str(e)}))
+        print(json.dumps({"error": str(e)}), flush=True)
         sys.exit(1)
 
 
