@@ -1,8 +1,10 @@
 [referenceReels] REELS_DIR = D:\CutVideo\backend\reelsSpeed
-[referenceReels] Files in dir: 6, Supported videos: 5
+[referenceReels] Files in dir: 7, Supported videos: 5
 [referenceReels] Videos: WhatsApp Video 2026-07-02 at 14.43.05.mp4, WhatsApp Video 2026-07-02 at 14.43.12.mp4, WhatsApp Video 2026-07-02 at 14.43.32.mp4, WhatsApp Video 2026-07-02 at 14.44.01.mp4, WhatsApp Video 2026-07-02 at 14.44.04.mp4
+[aiAssistantClient] Required Python packages (fastapi, uvicorn, sklearn, etc.) not installed.
+[aiAssistantClient] Run: pip install -r "D:\CutVideo\backend\python\ai_assistant\requirements.txt"
 CutVideo backend running on http://localhost:5000
-Reels job 9bc1b2df-d194-4c50-beea-511893b31f02: Starting download
+Reels job 71057d08-7741-42bd-9465-3446f99922d7: Starting download
 Using yt-dlp engine (via yt-dlp-exec)
 FFmpeg detection:
   path: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
@@ -10,11 +12,11 @@ FFmpeg detection:
   size: 82797568
   isFile: true
   --ffmpeg-location value: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
-[yt-dlp] Executing: "D:\CutVideo\backend\node_modules\yt-dlp-exec\bin\yt-dlp.exe" -f best[height<=720] -o D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4 --no-playlist --extractor-retries 3 --newline --progress --no-color --js-runtimes node https://www.youtube.com/watch?v=dQw4w9WgXcQ --ffmpeg-location D:\CutVideo\backend\node_modules\ffmpeg-static
-[yt-dlp] Output path (resolved): D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4
+[yt-dlp] Executing: "D:\CutVideo\backend\node_modules\yt-dlp-exec\bin\yt-dlp.exe" -f bestvideo[vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo+bestaudio/best -o D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.mp4 --no-playlist --merge-output-format mp4 --extractor-retries 3 --newline --progress --no-color --js-runtimes node https://www.youtube.com/watch?v=dQw4w9WgXcQ --ffmpeg-location D:\CutVideo\backend\node_modules\ffmpeg-static
+[yt-dlp] Output path (resolved): D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.mp4
 [yt-dlp] FFmpeg location: D:\CutVideo\backend\node_modules\ffmpeg-static
-[yt-dlp] Start time: 2026-07-03T13:41:34.114Z
-[yt-dlp] Spawned PID: 18276
+[yt-dlp] Start time: 2026-07-04T11:02:29.940Z
+[yt-dlp] Spawned PID: 15072
 [yt-dlp] Idle timeout set: 300s of inactivity
 [yt-dlp:stdout] [youtube] Extracting URL: https://www.youtube.com/watch?v=dQw4w9WgXcQ
 [yt-dlp:stdout] [youtube] dQw4w9WgXcQ: Downloading webpage
@@ -22,465 +24,178 @@ FFmpeg detection:
 [yt-dlp:stdout] [youtube] dQw4w9WgXcQ: Downloading player 4918c89a-main
 [yt-dlp:stdout] [youtube] [jsc:node] Solving JS challenges using node
 [yt-dlp:stdout] [youtube] dQw4w9WgXcQ: Downloading m3u8 information
-[yt-dlp:stdout] [info] dQw4w9WgXcQ: Downloading 1 format(s): 95
-[yt-dlp:stdout] [hlsnative] Downloading m3u8 manifest
-[yt-dlp:stdout] [hlsnative] Total fragments: 39
-[download] Destination: D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4
-[yt-dlp:stdout] [download] 100.0% of ~   1.00KiB at    1.60KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   7.7% of ~  39.00KiB at    1.60KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   6.0% of ~ 117.00KiB at    1.60KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   5.5% of ~ 273.00KiB at    1.60KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   5.3% of ~ 585.00KiB at    1.60KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   5.2% of ~   1.18MiB at    1.60KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   5.2% of ~   2.40MiB at  117.28KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   5.1% of ~   4.84MiB at  256.75KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   5.1% of ~   9.71MiB at  384.13KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   4.1% of ~  19.46MiB at  531.85KiB/s ETA Unknown (frag 0/39)
-[yt-dlp:stdout] [download]   1.3% of ~  61.56MiB at  531.85KiB/s ETA Unknown (frag 1/39)
-[yt-dlp:stdout] [download]   5.1% of ~  15.39MiB at  594.19KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   5.1% of ~  15.41MiB at  594.19KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   5.2% of ~  15.45MiB at  594.19KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   5.2% of ~  15.52MiB at  594.19KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   5.2% of ~  15.68MiB at  594.19KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   5.3% of ~  15.98MiB at  594.19KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   5.5% of ~  16.59MiB at  643.29KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   5.8% of ~  17.81MiB at  677.15KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   6.4% of ~  20.25MiB at  727.21KiB/s ETA 00:20 (frag 1/39)
-[yt-dlp:stdout] [download]   6.1% of ~  25.12MiB at  784.98KiB/s ETA 00:21 (frag 1/39)
-[yt-dlp:stdout] [download]   3.4% of ~  44.83MiB at  784.98KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   7.7% of ~  20.07MiB at  784.98KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   7.7% of ~  20.09MiB at  784.98KiB/s ETA 00:21 (frag 2/39)
-[download]   7.7% of ~  20.11MiB at  784.98KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   7.7% of ~  20.16MiB at  818.34KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   7.8% of ~  20.26MiB at  818.34KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   7.8% of ~  20.47MiB at  818.34KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   8.0% of ~  20.87MiB at  818.34KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   8.3% of ~  21.68MiB at  852.59KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   8.8% of ~  23.31MiB at  887.92KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   9.6% of ~  26.56MiB at  939.26KiB/s ETA 00:21 (frag 2/39)
-[yt-dlp:stdout] [download]   5.5% of ~  45.89MiB at  939.26KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.3% of ~  24.74MiB at  963.59KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.3% of ~  24.74MiB at  963.59KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.3% of ~  24.76MiB at  963.59KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.3% of ~  24.80MiB at  963.59KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.3% of ~  24.88MiB at  963.59KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.4% of ~  25.03MiB at  963.59KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.5% of ~  25.34MiB at  987.84KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  10.7% of ~  25.94MiB at  987.84KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]  11.2% of ~  27.16MiB at 1013.84KiB/s ETA 00:21 (frag 3/39)
-[yt-dlp:stdout] [download]   8.8% of ~  34.42MiB at 1013.84KiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  12.8% of ~  23.66MiB at    1.00MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  12.8% of ~  23.67MiB at    1.00MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  12.8% of ~  23.68MiB at    1.00MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  12.9% of ~  23.72MiB at    1.00MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  12.9% of ~  23.78MiB at    1.00MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  13.0% of ~  23.90MiB at    1.01MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  13.1% of ~  24.14MiB at    1.01MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  13.3% of ~  24.63MiB at    1.01MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  13.8% of ~  25.60MiB at    1.02MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  13.1% of ~  27.55MiB at    1.01MiB/s ETA 00:21 (frag 4/39)
-[yt-dlp:stdout] [download]  11.1% of ~  32.44MiB at    1.01MiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.4% of ~  23.38MiB at 1023.02KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.4% of ~  23.38MiB at 1023.02KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.4% of ~  23.39MiB at 1023.02KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.4% of ~  23.42MiB at 1023.02KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.5% of ~  23.47MiB at 1023.02KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.5% of ~  23.57MiB at 1023.02KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.6% of ~  23.78MiB at 1017.76KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.9% of ~  24.18MiB at 1017.76KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  16.4% of ~  24.99MiB at    1.00MiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  17.3% of ~  26.62MiB at 1016.79KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  15.5% of ~  29.87MiB at 1016.79KiB/s ETA 00:21 (frag 5/39)
-[yt-dlp:stdout] [download]  12.6% of ~  36.69MiB at 1016.79KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.0% of ~  25.74MiB at  980.00KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.0% of ~  25.75MiB at  980.00KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.0% of ~  25.76MiB at  980.00KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.0% of ~  25.78MiB at  980.00KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.0% of ~  25.83MiB at  980.00KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.1% of ~  25.91MiB at  980.00KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.2% of ~  26.09MiB at  980.00KiB/s ETA 00:21 (frag 6/39)
-[yt-dlp:stdout] [download]  18.4% of ~  26.43MiB at  936.57KiB/s ETA 00:22 (frag 6/39)
-[yt-dlp:stdout] [download]  18.9% of ~  27.13MiB at  922.73KiB/s ETA 00:22 (frag 6/39)
-[yt-dlp:stdout] [download]  18.6% of ~  28.52MiB at  894.30KiB/s ETA 00:23 (frag 6/39)
-[yt-dlp:stdout] [download]  15.9% of ~  33.26MiB at  894.30KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  20.5% of ~  25.81MiB at  872.99KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  20.5% of ~  25.82MiB at  872.99KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  20.5% of ~  25.83MiB at  872.99KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  20.5% of ~  25.85MiB at  872.99KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  20.6% of ~  25.89MiB at  872.99KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  20.6% of ~  25.96MiB at  872.99KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  20.8% of ~  26.11MiB at  863.09KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  21.0% of ~  26.42MiB at  862.44KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  21.4% of ~  27.03MiB at  880.90KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  21.9% of ~  28.25MiB at  887.33KiB/s ETA 00:23 (frag 7/39)
-[yt-dlp:stdout] [download]  18.0% of ~  34.40MiB at  887.33KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.1% of ~  26.76MiB at  886.65KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.1% of ~  26.77MiB at  886.65KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.1% of ~  26.78MiB at  886.65KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.1% of ~  26.79MiB at  886.65KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.1% of ~  26.83MiB at  886.65KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.2% of ~  26.89MiB at  886.65KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.3% of ~  27.03MiB at  891.90KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  23.5% of ~  27.30MiB at  886.14KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  24.0% of ~  27.84MiB at  884.49KiB/s ETA 00:23 (frag 8/39)
-[yt-dlp:stdout] [download]  24.6% of ~  28.93MiB at  886.59KiB/s ETA 00:24 (frag 8/39)
-[yt-dlp:stdout] [download]  20.4% of ~  35.00MiB at  886.59KiB/s ETA 00:24 (frag 9/39)
-[yt-dlp:stdout] [download]  25.6% of ~  27.79MiB at  889.73KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  25.6% of ~  27.80MiB at  889.73KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  25.7% of ~  27.80MiB at  889.73KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  25.7% of ~  27.82MiB at  889.73KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  25.7% of ~  27.85MiB at  889.73KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  25.8% of ~  27.91MiB at  889.73KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  25.9% of ~  28.03MiB at  897.64KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  26.1% of ~  28.28MiB at  902.06KiB/s ETA 00:23 (frag 9/39)
-[yt-dlp:stdout] [download]  26.5% of ~  28.76MiB at  889.37KiB/s ETA 00:24 (frag 9/39)
-[yt-dlp:stdout] [download]  27.2% of ~  29.74MiB at  887.73KiB/s ETA 00:24 (frag 9/39)
-[yt-dlp:stdout] [download]  22.9% of ~  35.34MiB at  887.73KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.2% of ~  28.69MiB at  844.51KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.2% of ~  28.70MiB at  844.51KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.2% of ~  28.70MiB at  844.51KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.2% of ~  28.72MiB at  844.51KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.3% of ~  28.75MiB at  844.51KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.3% of ~  28.80MiB at  844.51KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.4% of ~  28.91MiB at  821.75KiB/s ETA 00:24 (frag 10/39)
-[yt-dlp:stdout] [download]  28.6% of ~  29.13MiB at  807.88KiB/s ETA 00:25 (frag 10/39)
-[yt-dlp:stdout] [download]  29.1% of ~  29.58MiB at  829.35KiB/s ETA 00:25 (frag 10/39)
-[yt-dlp:stdout] [download]  29.8% of ~  30.46MiB at  807.24KiB/s ETA 00:25 (frag 10/39)
-[yt-dlp:stdout] [download]  25.4% of ~  35.73MiB at  807.24KiB/s ETA 00:25 (frag 11/39)
-[yt-dlp:stdout] [download]  30.8% of ~  29.53MiB at  780.45KiB/s ETA 00:25 (frag 11/39)
-[yt-dlp:stdout] [download]  30.8% of ~  29.53MiB at  780.45KiB/s ETA 00:25 (frag 11/39)
-[yt-dlp:stdout] [download]  30.8% of ~  29.54MiB at  780.45KiB/s ETA 00:25 (frag 11/39)
-[yt-dlp:stdout] [download]  30.8% of ~  29.55MiB at  780.45KiB/s ETA 00:25 (frag 11/39)
-[yt-dlp:stdout] [download]  30.8% of ~  29.58MiB at  780.45KiB/s ETA 00:25 (frag 11/39)
-[yt-dlp:stdout] [download]  30.9% of ~  29.63MiB at  780.45KiB/s ETA 00:25 (frag 11/39)
-[yt-dlp:stdout] [download]  31.0% of ~  29.73MiB at  765.42KiB/s ETA 00:26 (frag 11/39)
-[yt-dlp:stdout] [download]  31.2% of ~  29.93MiB at  775.65KiB/s ETA 00:26 (frag 11/39)
-[yt-dlp:stdout] [download]  31.6% of ~  30.34MiB at  785.86KiB/s ETA 00:26 (frag 11/39)
-[yt-dlp:stdout] [download]  31.5% of ~  31.15MiB at  800.57KiB/s ETA 00:26 (frag 11/39)
-[yt-dlp:stdout] [download]  28.7% of ~  34.19MiB at  800.57KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.3% of ~  29.41MiB at  784.77KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.3% of ~  29.41MiB at  784.77KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.3% of ~  29.42MiB at  784.77KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.4% of ~  29.43MiB at  784.77KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.4% of ~  29.45MiB at  784.77KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.4% of ~  29.50MiB at  784.77KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.5% of ~  29.60MiB at  769.30KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  33.8% of ~  29.78MiB at  758.68KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  34.2% of ~  30.16MiB at  765.86KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  34.4% of ~  30.91MiB at  809.52KiB/s ETA 00:26 (frag 12/39)
-[yt-dlp:stdout] [download]  30.9% of ~  34.42MiB at  809.52KiB/s ETA 00:26 (frag 13/39)
-[yt-dlp:stdout] [download]  35.9% of ~  29.64MiB at  809.54KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  35.9% of ~  29.64MiB at  809.54KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  35.9% of ~  29.64MiB at  809.54KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  35.9% of ~  29.66MiB at  809.54KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  36.0% of ~  29.68MiB at  809.54KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  36.0% of ~  29.72MiB at  809.54KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  36.1% of ~  29.81MiB at  814.54KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  36.3% of ~  29.98MiB at  806.51KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  36.7% of ~  30.33MiB at  815.06KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  36.0% of ~  31.03MiB at  815.06KiB/s ETA 00:25 (frag 13/39)
-[yt-dlp:stdout] [download]  34.3% of ~  32.63MiB at  815.06KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.5% of ~  29.06MiB at  800.14KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.5% of ~  29.06MiB at  800.14KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.5% of ~  29.06MiB at  800.14KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.5% of ~  29.07MiB at  800.14KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.5% of ~  29.09MiB at  800.14KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.6% of ~  29.14MiB at  800.14KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.7% of ~  29.22MiB at  787.97KiB/s ETA 00:25 (frag 14/39)
-[yt-dlp:stdout] [download]  38.9% of ~  29.38MiB at  790.94KiB/s ETA 00:24 (frag 14/39)
-[yt-dlp:stdout] [download]  39.3% of ~  29.70MiB at  795.72KiB/s ETA 00:24 (frag 14/39)
-[yt-dlp:stdout] [download]  40.0% of ~  30.35MiB at  799.91KiB/s ETA 00:24 (frag 14/39)
-[yt-dlp:stdout] [download]  35.6% of ~  34.13MiB at  799.91KiB/s ETA 00:24 (frag 15/39)
-[yt-dlp:stdout] [download]  41.0% of ~  29.62MiB at  814.87KiB/s ETA 00:24 (frag 15/39)
-[yt-dlp:stdout] [download]  41.0% of ~  29.62MiB at  814.87KiB/s ETA 00:24 (frag 15/39)
-[yt-dlp:stdout] [download]  41.0% of ~  29.63MiB at  814.87KiB/s ETA 00:24 (frag 15/39)
-[yt-dlp:stdout] [download]  41.1% of ~  29.64MiB at  814.87KiB/s ETA 00:24 (frag 15/39)
-[yt-dlp:stdout] [download]  41.1% of ~  29.65MiB at  814.87KiB/s ETA 00:24 (frag 15/39)
-[yt-dlp:stdout] [download]  41.1% of ~  29.69MiB at  814.87KiB/s ETA 00:24 (frag 15/39)
-[yt-dlp:stdout] [download]  41.2% of ~  29.77MiB at  832.94KiB/s ETA 00:23 (frag 15/39)
-[yt-dlp:stdout] [download]  41.4% of ~  29.92MiB at  851.63KiB/s ETA 00:23 (frag 15/39)
-[yt-dlp:stdout] [download]  41.9% of ~  30.23MiB at  866.37KiB/s ETA 00:23 (frag 15/39)
-[yt-dlp:stdout] [download]  41.5% of ~  30.84MiB at  870.70KiB/s ETA 00:22 (frag 15/39)
-[yt-dlp:stdout] [download]  39.1% of ~  32.73MiB at  870.70KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  43.6% of ~  29.34MiB at  866.88KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  43.6% of ~  29.34MiB at  866.88KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  43.6% of ~  29.34MiB at  866.88KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  43.6% of ~  29.35MiB at  866.88KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  43.6% of ~  29.37MiB at  866.88KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  43.7% of ~  29.41MiB at  866.88KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  43.8% of ~  29.48MiB at  856.54KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  44.0% of ~  29.62MiB at  853.15KiB/s ETA 00:22 (frag 16/39)
-[yt-dlp:stdout] [download]  44.4% of ~  29.91MiB at  875.57KiB/s ETA 00:21 (frag 16/39)
-[yt-dlp:stdout] [download]  43.9% of ~  30.48MiB at  892.89KiB/s ETA 00:21 (frag 16/39)
-[yt-dlp:stdout] [download]  41.8% of ~  32.02MiB at  892.89KiB/s ETA 00:21 (frag 17/39)
-[yt-dlp:stdout] [download]  46.2% of ~  28.98MiB at  879.72KiB/s ETA 00:21 (frag 17/39)
-[yt-dlp:stdout] [download]  46.2% of ~  28.98MiB at  879.72KiB/s ETA 00:21 (frag 17/39)
-[yt-dlp:stdout] [download]  46.2% of ~  28.98MiB at  879.72KiB/s ETA 00:21 (frag 17/39)
-[yt-dlp:stdout] [download]  46.2% of ~  28.99MiB at  879.72KiB/s ETA 00:21 (frag 17/39)
-[yt-dlp:stdout] [download]  46.2% of ~  29.01MiB at  879.72KiB/s ETA 00:21 (frag 17/39)
-[yt-dlp:stdout] [download]  46.3% of ~  29.04MiB at  862.70KiB/s ETA 00:21 (frag 17/39)
-[yt-dlp:stdout] [download]  46.4% of ~  29.11MiB at  852.11KiB/s ETA 00:20 (frag 17/39)
-[yt-dlp:stdout] [download]  46.6% of ~  29.25MiB at  850.99KiB/s ETA 00:20 (frag 17/39)
-[yt-dlp:stdout] [download]  47.0% of ~  29.52MiB at  855.96KiB/s ETA 00:20 (frag 17/39)
-[yt-dlp:stdout] [download]  47.0% of ~  30.06MiB at  859.22KiB/s ETA 00:20 (frag 17/39)
-[yt-dlp:stdout] [download]  43.8% of ~  32.27MiB at  859.22KiB/s ETA 00:20 (frag 18/39)
-[yt-dlp:stdout] [download]  48.7% of ~  29.01MiB at  854.81KiB/s ETA 00:20 (frag 18/39)
-[yt-dlp:stdout] [download]  48.7% of ~  29.02MiB at  854.81KiB/s ETA 00:20 (frag 18/39)
-[yt-dlp:stdout] [download]  48.7% of ~  29.02MiB at  854.81KiB/s ETA 00:20 (frag 18/39)
-[yt-dlp:stdout] [download]  48.7% of ~  29.03MiB at  854.81KiB/s ETA 00:20 (frag 18/39)
-[yt-dlp:stdout] [download]  48.8% of ~  29.04MiB at  829.87KiB/s ETA 00:20 (frag 18/39)
-[yt-dlp:stdout] [download]  48.8% of ~  29.08MiB at  829.87KiB/s ETA 00:20 (frag 18/39)
-[yt-dlp:stdout] [download]  48.9% of ~  29.14MiB at  812.36KiB/s ETA 00:19 (frag 18/39)
-[yt-dlp:stdout] [download]  49.1% of ~  29.27MiB at  803.35KiB/s ETA 00:19 (frag 18/39)
-[yt-dlp:stdout] [download]  49.6% of ~  29.52MiB at  820.48KiB/s ETA 00:19 (frag 18/39)
-[yt-dlp:stdout] [download]  49.8% of ~  30.04MiB at  828.14KiB/s ETA 00:19 (frag 18/39)
-[yt-dlp:stdout] [download]  46.2% of ~  32.41MiB at  828.14KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.3% of ~  29.17MiB at  808.22KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.3% of ~  29.18MiB at  808.22KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.3% of ~  29.18MiB at  808.22KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.3% of ~  29.19MiB at  808.22KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.3% of ~  29.20MiB at  808.22KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.4% of ~  29.23MiB at  808.22KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.5% of ~  29.29MiB at  800.93KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  51.7% of ~  29.42MiB at  808.53KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  52.1% of ~  29.66MiB at  814.05KiB/s ETA 00:19 (frag 19/39)
-[yt-dlp:stdout] [download]  52.8% of ~  30.15MiB at  844.59KiB/s ETA 00:18 (frag 19/39)
-[yt-dlp:stdout] [download]  48.4% of ~  32.86MiB at  844.59KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  53.8% of ~  29.54MiB at  851.72KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  53.9% of ~  29.54MiB at  851.72KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  53.9% of ~  29.54MiB at  851.72KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  53.9% of ~  29.55MiB at  851.72KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  53.9% of ~  29.57MiB at  851.72KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  54.0% of ~  29.59MiB at  851.72KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  54.1% of ~  29.65MiB at  858.11KiB/s ETA 00:18 (frag 20/39)
-[yt-dlp:stdout] [download]  54.3% of ~  29.77MiB at  880.28KiB/s ETA 00:17 (frag 20/39)
-[yt-dlp:stdout] [download]  54.7% of ~  30.00MiB at  911.73KiB/s ETA 00:17 (frag 20/39)
-[yt-dlp:stdout] [download]  55.3% of ~  30.47MiB at  918.22KiB/s ETA 00:17 (frag 20/39)
-[yt-dlp:stdout] [download]  51.0% of ~  33.01MiB at  918.22KiB/s ETA 00:17 (frag 21/39)
-[yt-dlp:stdout] [download]  56.4% of ~  29.85MiB at  917.34KiB/s ETA 00:17 (frag 21/39)
-[yt-dlp:stdout] [download]  56.4% of ~  29.86MiB at  917.34KiB/s ETA 00:17 (frag 21/39)
-[yt-dlp:stdout] [download]  56.4% of ~  29.86MiB at  917.34KiB/s ETA 00:17 (frag 21/39)
-[yt-dlp:stdout] [download]  56.4% of ~  29.87MiB at  917.34KiB/s ETA 00:17 (frag 21/39)
-[yt-dlp:stdout] [download]  56.5% of ~  29.88MiB at  917.34KiB/s ETA 00:17 (frag 21/39)
-[yt-dlp:stdout] [download]  56.5% of ~  29.91MiB at  917.34KiB/s ETA 00:17 (frag 21/39)
-[yt-dlp:stdout] [download]  56.6% of ~  29.96MiB at  923.67KiB/s ETA 00:16 (frag 21/39)
-[yt-dlp:stdout] [download]  56.8% of ~  30.07MiB at  932.65KiB/s ETA 00:16 (frag 21/39)
-[yt-dlp:stdout] [download]  57.2% of ~  30.30MiB at  945.27KiB/s ETA 00:16 (frag 21/39)
-[yt-dlp:stdout] [download]  58.0% of ~  30.74MiB at  959.51KiB/s ETA 00:15 (frag 21/39)
-[yt-dlp:stdout] [download]  53.4% of ~  33.39MiB at  959.51KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.0% of ~  30.25MiB at  977.51KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.0% of ~  30.25MiB at  977.51KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.0% of ~  30.25MiB at  977.51KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.0% of ~  30.26MiB at  977.51KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.0% of ~  30.27MiB at  977.51KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.1% of ~  30.30MiB at  977.51KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.2% of ~  30.35MiB at  993.25KiB/s ETA 00:15 (frag 22/39)
-[yt-dlp:stdout] [download]  59.4% of ~  30.46MiB at  996.23KiB/s ETA 00:14 (frag 22/39)
-[yt-dlp:stdout] [download]  59.8% of ~  30.67MiB at  993.59KiB/s ETA 00:14 (frag 22/39)
-[yt-dlp:stdout] [download]  59.2% of ~  31.10MiB at  992.67KiB/s ETA 00:14 (frag 22/39)
-[yt-dlp:stdout] [download]  57.2% of ~  32.20MiB at  992.67KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  61.5% of ~  29.92MiB at  958.77KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  61.5% of ~  29.92MiB at  958.77KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  61.6% of ~  29.93MiB at  958.77KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  61.6% of ~  29.93MiB at  958.77KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  61.6% of ~  29.95MiB at  958.77KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  61.6% of ~  29.97MiB at  935.70KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  61.7% of ~  30.02MiB at  935.70KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  62.0% of ~  30.12MiB at  938.75KiB/s ETA 00:14 (frag 23/39)
-[yt-dlp:stdout] [download]  62.4% of ~  30.33MiB at  948.71KiB/s ETA 00:13 (frag 23/39)
-[yt-dlp:stdout] [download]  63.0% of ~  30.73MiB at  946.26KiB/s ETA 00:13 (frag 23/39)
-[yt-dlp:stdout] [download]  58.7% of ~  32.97MiB at  946.26KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.1% of ~  30.19MiB at  929.41KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.1% of ~  30.19MiB at  929.41KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.1% of ~  30.19MiB at  929.41KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.1% of ~  30.20MiB at  929.41KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.2% of ~  30.21MiB at  929.41KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.2% of ~  30.24MiB at  929.41KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.3% of ~  30.28MiB at  923.34KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.5% of ~  30.38MiB at  923.34KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  64.9% of ~  30.58MiB at  956.03KiB/s ETA 00:13 (frag 24/39)
-[yt-dlp:stdout] [download]  65.2% of ~  30.97MiB at  970.37KiB/s ETA 00:12 (frag 24/39)
-[yt-dlp:stdout] [download]  61.5% of ~  32.85MiB at  970.37KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  66.7% of ~  30.31MiB at  936.25KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  66.7% of ~  30.31MiB at  936.25KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  66.7% of ~  30.31MiB at  936.25KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  66.7% of ~  30.32MiB at  936.25KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  66.7% of ~  30.33MiB at  936.25KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  66.8% of ~  30.35MiB at  936.25KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  66.9% of ~  30.40MiB at  919.85KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  67.1% of ~  30.49MiB at  920.11KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  67.5% of ~  30.68MiB at  905.31KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  67.9% of ~  31.05MiB at  859.40KiB/s ETA 00:12 (frag 25/39)
-[yt-dlp:stdout] [download]  64.0% of ~  32.91MiB at  859.40KiB/s ETA 00:12 (frag 26/39)
-[yt-dlp:stdout] [download]  69.2% of ~  30.44MiB at  798.15KiB/s ETA 00:12 (frag 26/39)
-[yt-dlp:stdout] [download]  69.2% of ~  30.44MiB at  798.15KiB/s ETA 00:12 (frag 26/39)
-[yt-dlp:stdout] [download]  69.2% of ~  30.44MiB at  798.15KiB/s ETA 00:12 (frag 26/39)
-[yt-dlp:stdout] [download]  69.3% of ~  30.45MiB at  798.15KiB/s ETA 00:12 (frag 26/39)
-[yt-dlp:stdout] [download]  69.3% of ~  30.46MiB at  743.63KiB/s ETA 00:13 (frag 26/39)
-[yt-dlp:stdout] [download]  69.3% of ~  30.48MiB at  743.63KiB/s ETA 00:13 (frag 26/39)
-[yt-dlp:stdout] [download]  69.4% of ~  30.52MiB at  711.14KiB/s ETA 00:13 (frag 26/39)
-[yt-dlp:stdout] [download]  69.6% of ~  30.61MiB at  652.30KiB/s ETA 00:13 (frag 26/39)
-[yt-dlp:stdout] [download]  70.0% of ~  30.80MiB at  552.35KiB/s ETA 00:15 (frag 26/39)
-[yt-dlp:stdout] [download]  69.3% of ~  31.16MiB at  552.35KiB/s ETA 00:15 (frag 26/39)
-[yt-dlp:stdout] [download]  67.6% of ~  31.97MiB at  552.35KiB/s ETA 00:15 (frag 27/39)
-[yt-dlp:stdout] [download]  71.8% of ~  30.09MiB at  459.28KiB/s ETA 00:17 (frag 27/39)
-[yt-dlp:stdout] [download]  71.8% of ~  30.09MiB at  459.28KiB/s ETA 00:17 (frag 27/39)
-[yt-dlp:stdout] [download]  71.8% of ~  30.09MiB at  459.28KiB/s ETA 00:17 (frag 27/39)
-[yt-dlp:stdout] [download]  71.8% of ~  30.10MiB at  459.28KiB/s ETA 00:17 (frag 27/39)
-[yt-dlp:stdout] [download]  71.8% of ~  30.11MiB at  459.28KiB/s ETA 00:17 (frag 27/39)
-[yt-dlp:stdout] [download]  71.9% of ~  30.13MiB at  459.28KiB/s ETA 00:17 (frag 27/39)
-[yt-dlp:stdout] [download]  72.0% of ~  30.17MiB at  401.48KiB/s ETA 00:18 (frag 27/39)
-[yt-dlp:stdout] [download]  72.2% of ~  30.26MiB at  362.19KiB/s ETA 00:20 (frag 27/39)
-[yt-dlp:stdout] [download]  72.6% of ~  30.44MiB at  358.07KiB/s ETA 00:20 (frag 27/39)
-[yt-dlp:stdout] [download]  73.0% of ~  30.78MiB at  350.68KiB/s ETA 00:21 (frag 27/39)
-[yt-dlp:stdout] [download]  69.1% of ~  32.49MiB at  350.68KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.4% of ~  30.21MiB at  341.66KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.4% of ~  30.21MiB at  341.66KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.4% of ~  30.21MiB at  341.66KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.4% of ~  30.22MiB at  341.66KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.4% of ~  30.23MiB at  341.66KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.5% of ~  30.25MiB at  341.66KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.6% of ~  30.29MiB at  346.66KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  74.8% of ~  30.38MiB at  360.50KiB/s ETA 00:21 (frag 28/39)
-[yt-dlp:stdout] [download]  75.2% of ~  30.54MiB at  388.15KiB/s ETA 00:20 (frag 28/39)
-[yt-dlp:stdout] [download]  75.4% of ~  30.88MiB at  432.37KiB/s ETA 00:20 (frag 28/39)
-[yt-dlp:stdout] [download]  71.8% of ~  32.42MiB at  432.37KiB/s ETA 00:20 (frag 29/39)
-[yt-dlp:stdout] [download]  76.9% of ~  30.27MiB at  460.44KiB/s ETA 00:19 (frag 29/39)
-[yt-dlp:stdout] [download]  76.9% of ~  30.27MiB at  460.44KiB/s ETA 00:19 (frag 29/39)
-[yt-dlp:stdout] [download]  76.9% of ~  30.28MiB at  460.44KiB/s ETA 00:19 (frag 29/39)
-[yt-dlp:stdout] [download]  76.9% of ~  30.28MiB at  460.44KiB/s ETA 00:19 (frag 29/39)
-[yt-dlp:stdout] [download]  77.0% of ~  30.29MiB at  460.44KiB/s ETA 00:19 (frag 29/39)
-[yt-dlp:stdout] [download]  77.0% of ~  30.31MiB at  460.44KiB/s ETA 00:19 (frag 29/39)
-[yt-dlp:stdout] [download]  77.1% of ~  30.35MiB at  460.44KiB/s ETA 00:19 (frag 29/39)
-[yt-dlp:stdout] [download]  77.3% of ~  30.43MiB at  500.39KiB/s ETA 00:18 (frag 29/39)
-[yt-dlp:stdout] [download]  77.7% of ~  30.60MiB at  552.27KiB/s ETA 00:18 (frag 29/39)
-[yt-dlp:stdout] [download]  78.4% of ~  30.92MiB at  617.94KiB/s ETA 00:17 (frag 29/39)
-[yt-dlp:stdout] [download]  74.0% of ~  32.73MiB at  617.94KiB/s ETA 00:17 (frag 30/39)
-[yt-dlp:stdout] [download]  79.5% of ~  30.48MiB at  776.90KiB/s ETA 00:15 (frag 30/39)
-[yt-dlp:stdout] [download]  79.5% of ~  30.49MiB at  776.90KiB/s ETA 00:15 (frag 30/39)
-[yt-dlp:stdout] [download]  79.5% of ~  30.49MiB at  776.90KiB/s ETA 00:15 (frag 30/39)
-[yt-dlp:stdout] [download]  79.5% of ~  30.49MiB at  776.90KiB/s ETA 00:15 (frag 30/39)
-[yt-dlp:stdout] [download]  79.5% of ~  30.50MiB at  776.90KiB/s ETA 00:15 (frag 30/39)
-[yt-dlp:stdout] [download]  79.6% of ~  30.52MiB at  776.90KiB/s ETA 00:15 (frag 30/39)
-[yt-dlp:stdout] [download]  79.7% of ~  30.56MiB at  898.20KiB/s ETA 00:14 (frag 30/39)
-[yt-dlp:stdout] [download]  79.9% of ~  30.64MiB at  898.20KiB/s ETA 00:14 (frag 30/39)
-[yt-dlp:stdout] [download]  80.3% of ~  30.80MiB at  985.30KiB/s ETA 00:13 (frag 30/39)
-[yt-dlp:stdout] [download]  81.1% of ~  31.11MiB at    1.02MiB/s ETA 00:13 (frag 30/39)
-[yt-dlp:stdout] [download]  79.6% of ~  31.74MiB at    1.02MiB/s ETA 00:13 (frag 30/39)
-[yt-dlp:stdout] [download]  76.4% of ~  33.07MiB at    1.02MiB/s ETA 00:13 (frag 31/39)
-[yt-dlp:stdout] [download]  82.1% of ~  30.78MiB at    1.04MiB/s ETA 00:12 (frag 31/39)
-[yt-dlp:stdout] [download]  82.1% of ~  30.78MiB at    1.04MiB/s ETA 00:12 (frag 31/39)
-[yt-dlp:stdout] [download]  82.1% of ~  30.79MiB at    1.04MiB/s ETA 00:12 (frag 31/39)
-[yt-dlp:stdout] [download]  82.1% of ~  30.79MiB at    1.04MiB/s ETA 00:12 (frag 31/39)
-[yt-dlp:stdout] [download]  82.1% of ~  30.80MiB at    1.04MiB/s ETA 00:12 (frag 31/39)
-[yt-dlp:stdout] [download]  82.2% of ~  30.82MiB at    1.04MiB/s ETA 00:12 (frag 31/39)
-[yt-dlp:stdout] [download]  82.3% of ~  30.86MiB at    1.06MiB/s ETA 00:11 (frag 31/39)
-[yt-dlp:stdout] [download]  82.5% of ~  30.93MiB at    1.05MiB/s ETA 00:10 (frag 31/39)
-[yt-dlp:stdout] [download]  82.9% of ~  31.09MiB at    1.04MiB/s ETA 00:10 (frag 31/39)
-[yt-dlp:stdout] [download]  83.5% of ~  31.39MiB at    1.03MiB/s ETA 00:09 (frag 31/39)
-[yt-dlp:stdout] [download]  79.2% of ~  33.07MiB at    1.03MiB/s ETA 00:09 (frag 32/39)
-[yt-dlp:stdout] [download]  84.6% of ~  30.96MiB at    1.01MiB/s ETA 00:09 (frag 32/39)
-[yt-dlp:stdout] [download]  84.6% of ~  30.96MiB at    1.01MiB/s ETA 00:09 (frag 32/39)
-[yt-dlp:stdout] [download]  84.6% of ~  30.96MiB at    1.01MiB/s ETA 00:09 (frag 32/39)
-[yt-dlp:stdout] [download]  84.6% of ~  30.97MiB at    1.01MiB/s ETA 00:09 (frag 32/39)
-[yt-dlp:stdout] [download]  84.7% of ~  30.98MiB at    1.01MiB/s ETA 00:09 (frag 32/39)
-[yt-dlp:stdout] [download]  84.7% of ~  31.00MiB at    1.01MiB/s ETA 00:09 (frag 32/39)
-[yt-dlp:stdout] [download]  84.8% of ~  31.03MiB at    1.03MiB/s ETA 00:08 (frag 32/39)
-[yt-dlp:stdout] [download]  85.0% of ~  31.11MiB at    1.04MiB/s ETA 00:08 (frag 32/39)
-[yt-dlp:stdout] [download]  85.4% of ~  31.25MiB at 1009.22KiB/s ETA 00:08 (frag 32/39)
-[yt-dlp:stdout] [download]  85.3% of ~  31.55MiB at  999.07KiB/s ETA 00:07 (frag 32/39)
-[yt-dlp:stdout] [download]  82.4% of ~  32.68MiB at  999.07KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.2% of ~  30.89MiB at  940.62KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.2% of ~  30.89MiB at  940.62KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.2% of ~  30.89MiB at  940.62KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.2% of ~  30.89MiB at  940.62KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.2% of ~  30.90MiB at  940.62KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.3% of ~  30.92MiB at  899.62KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.4% of ~  30.96MiB at  899.62KiB/s ETA 00:07 (frag 33/39)
-[yt-dlp:stdout] [download]  87.6% of ~  31.03MiB at  880.08KiB/s ETA 00:06 (frag 33/39)
-[yt-dlp:stdout] [download]  88.0% of ~  31.17MiB at  862.66KiB/s ETA 00:06 (frag 33/39)
-[yt-dlp:stdout] [download]  88.8% of ~  31.46MiB at  885.63KiB/s ETA 00:06 (frag 33/39)
-[yt-dlp:stdout] [download]  87.2% of ~  32.03MiB at  885.63KiB/s ETA 00:06 (frag 33/39)
-[yt-dlp:stdout] [download]  84.2% of ~  33.19MiB at  885.63KiB/s ETA 00:06 (frag 34/39)
-[yt-dlp:stdout] [download]  89.7% of ~  31.12MiB at  883.66KiB/s ETA 00:06 (frag 34/39)
-[yt-dlp:stdout] [download]  89.7% of ~  31.12MiB at  883.66KiB/s ETA 00:06 (frag 34/39)
-[yt-dlp:stdout] [download]  89.8% of ~  31.13MiB at  883.66KiB/s ETA 00:06 (frag 34/39)
-[yt-dlp:stdout] [download]  89.8% of ~  31.13MiB at  883.66KiB/s ETA 00:06 (frag 34/39)
-[yt-dlp:stdout] [download]  89.8% of ~  31.14MiB at  894.19KiB/s ETA 00:05 (frag 34/39)
-[yt-dlp:stdout] [download]  89.8% of ~  31.16MiB at  894.19KiB/s ETA 00:05 (frag 34/39)
-[yt-dlp:stdout] [download]  89.9% of ~  31.19MiB at  905.75KiB/s ETA 00:05 (frag 34/39)
-[yt-dlp:stdout] [download]  90.1% of ~  31.26MiB at  918.03KiB/s ETA 00:05 (frag 34/39)
-[yt-dlp:stdout] [download]  90.5% of ~  31.40MiB at  931.22KiB/s ETA 00:05 (frag 34/39)
-[yt-dlp:stdout] [download]  91.3% of ~  31.68MiB at  948.32KiB/s ETA 00:04 (frag 34/39)
-[yt-dlp:stdout] [download]  86.8% of ~  33.34MiB at  948.32KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.3% of ~  31.34MiB at  946.21KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.3% of ~  31.34MiB at  946.21KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.3% of ~  31.34MiB at  946.21KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.3% of ~  31.34MiB at  946.21KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.4% of ~  31.35MiB at  946.21KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.4% of ~  31.37MiB at  946.21KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.5% of ~  31.40MiB at  943.31KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  92.7% of ~  31.47MiB at  939.78KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  93.1% of ~  31.61MiB at  971.62KiB/s ETA 00:04 (frag 35/39)
-[yt-dlp:stdout] [download]  93.7% of ~  31.88MiB at  985.37KiB/s ETA 00:03 (frag 35/39)
-[yt-dlp:stdout] [download]  89.5% of ~  33.39MiB at  985.37KiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  94.9% of ~  31.49MiB at 1019.31KiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  94.9% of ~  31.49MiB at 1019.31KiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  94.9% of ~  31.49MiB at 1019.31KiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  94.9% of ~  31.50MiB at 1019.31KiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  94.9% of ~  31.51MiB at 1019.31KiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  95.0% of ~  31.52MiB at 1019.31KiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  95.1% of ~  31.56MiB at    1.02MiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  95.3% of ~  31.62MiB at    1.04MiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  95.7% of ~  31.75MiB at    1.07MiB/s ETA 00:03 (frag 36/39)
-[yt-dlp:stdout] [download]  95.8% of ~  32.02MiB at    1.09MiB/s ETA 00:02 (frag 36/39)
-[yt-dlp:stdout] [download]  92.4% of ~  33.19MiB at    1.09MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.4% of ~  31.49MiB at    1.09MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.4% of ~  31.49MiB at    1.09MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.4% of ~  31.49MiB at    1.09MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.5% of ~  31.50MiB at    1.09MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.5% of ~  31.50MiB at    1.09MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.5% of ~  31.52MiB at    1.07MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.6% of ~  31.55MiB at    1.07MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  97.8% of ~  31.62MiB at    1.07MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  98.0% of ~  31.75MiB at    1.07MiB/s ETA 00:02 (frag 37/39)
-[yt-dlp:stdout] [download]  96.2% of ~  32.34MiB at    1.07MiB/s ETA 00:02 (frag 38/39)
-[yt-dlp:stdout] [download] 100.0% of ~  31.10MiB at    1.06MiB/s ETA 00:01 (frag 38/39)
-[yt-dlp:stdout] [download] 100.0% of ~  31.10MiB at    1.06MiB/s ETA 00:01 (frag 38/39)
-[yt-dlp:stdout] [download] 100.0% of ~  31.10MiB at    1.06MiB/s ETA 00:01 (frag 38/39)
-[yt-dlp:stdout] [download] 100.0% of ~  31.10MiB at    1.06MiB/s ETA 00:01 (frag 39/39)
-[yt-dlp:stdout] [download] 100% of   31.10MiB in 00:00:38 at 828.61KiB/s
-[yt-dlp:stdout] [FixupM3u8] Fixing MPEG-TS in MP4 container of "D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4"
-[yt-dlp] Process exited (PID: 18276, code: 0, signal: null)
-[yt-dlp] Process closed (PID: 18276, code: 0, duration: 48.0s)
-[yt-dlp] End time: 2026-07-03T13:42:22.122Z
-[yt-dlp] Download successful (48.0s)
-Reels job 9bc1b2df-d194-4c50-beea-511893b31f02: Starting highlight detection
-[validation] Starting pre-validation for D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4
-[validation] Source size: 28.61MB
-[validation] Output dir writable: D:\CutVideo\backend\temp\reels_9bc1b2df-d194-4c50-beea-511893b31f02
+[yt-dlp:stdout] [info] dQw4w9WgXcQ: Downloading 1 format(s): 137+140
+[yt-dlp:stdout] [download] Destination: D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.f137.mp4
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at   24.95KiB/s ETA 52:47
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at   73.02KiB/s ETA 18:02
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at  166.33KiB/s ETA 07:54
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at  356.43KiB/s ETA 03:41
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at  599.05KiB/s ETA 02:11
+[yt-dlp:stdout] [download]   0.1% of   77.16MiB at    1.19MiB/s ETA 01:04
+[yt-dlp:stdout] [download]   0.2% of   77.16MiB at    2.35MiB/s ETA 00:32
+[yt-dlp:stdout] [download]   0.3% of   77.16MiB at    1.81MiB/s ETA 00:42
+[yt-dlp:stdout] [download]   0.6% of   77.16MiB at  880.42KiB/s ETA 01:29
+[yt-dlp:stdout] [download]   1.3% of   77.16MiB at  967.93KiB/s ETA 01:20
+[yt-dlp:stdout] [download]   2.6% of   77.16MiB at  867.44KiB/s ETA 01:28
+[yt-dlp:stdout] [download]   3.6% of   77.16MiB at  880.25KiB/s ETA 01:26
+[yt-dlp:stdout] [download]   4.7% of   77.16MiB at  895.69KiB/s ETA 01:24
+[yt-dlp:stdout] [download]   5.9% of   77.16MiB at  984.02KiB/s ETA 01:15
+[yt-dlp:stdout] [download]   8.0% of   77.16MiB at    1.06MiB/s ETA 01:06
+[yt-dlp:stdout] [download]  10.0% of   77.16MiB at    1.10MiB/s ETA 01:02
+[yt-dlp:stdout] [download]  11.7% of   77.16MiB at    1.15MiB/s ETA 00:59
+[yt-dlp:stdout] [download]  12.6% of   77.16MiB at    1.18MiB/s ETA 00:57
+[yt-dlp:stdout] [download]  12.6% of   77.16MiB at  806.75KiB/s ETA 01:25
+[yt-dlp:stdout] [download]  12.6% of   77.16MiB at    2.36MiB/s ETA 00:28
+[yt-dlp:stdout] [download]  12.7% of   77.16MiB at    5.51MiB/s ETA 00:12
+[yt-dlp:stdout] [download]  12.7% of   77.16MiB at   11.82MiB/s ETA 00:05
+[yt-dlp:stdout] [download]  12.7% of   77.16MiB at    8.49MiB/s ETA 00:07
+[yt-dlp:stdout] [download]  12.7% of   77.16MiB at    6.58MiB/s ETA 00:10
+[yt-dlp:stdout] [download]  12.8% of   77.16MiB at    4.89MiB/s ETA 00:13
+[yt-dlp:stdout] [download]  13.0% of   77.16MiB at  678.83KiB/s ETA 01:41
+[yt-dlp:stdout] [download]  13.3% of   77.16MiB at  941.16KiB/s ETA 01:12
+[yt-dlp:stdout] [download]  13.9% of   77.16MiB at    1.15MiB/s ETA 00:57
+[yt-dlp:stdout] [download]  15.2% of   77.16MiB at    1.45MiB/s ETA 00:45
+[yt-dlp:stdout] [download]  17.7% of   77.16MiB at    1.33MiB/s ETA 00:47
+[yt-dlp:stdout] [download]  19.3% of   77.16MiB at    1.32MiB/s ETA 00:47
+[yt-dlp:stdout] [download]  21.0% of   77.16MiB at    1.28MiB/s ETA 00:47
+[yt-dlp:stdout] [download]  22.5% of   77.16MiB at    1.34MiB/s ETA 00:44
+[yt-dlp:stdout] [download]  24.8% of   77.16MiB at    1.34MiB/s ETA 00:43
+[yt-dlp:stdout] [download]  25.1% of   77.16MiB at    1.33MiB/s ETA 00:43
+[yt-dlp:stdout] [download]  25.1% of   77.16MiB at  338.20KiB/s ETA 02:54
+[yt-dlp:stdout] [download]  25.1% of   77.16MiB at 1014.59KiB/s ETA 00:58
+[yt-dlp:stdout] [download]  25.1% of   77.16MiB at    1.56MiB/s ETA 00:36
+[yt-dlp:stdout] [download]  25.1% of   77.16MiB at    3.35MiB/s ETA 00:17
+[yt-dlp:stdout] [download]  25.1% of   77.16MiB at    5.58MiB/s ETA 00:10
+[yt-dlp:stdout] [download]  25.2% of   77.16MiB at    3.29MiB/s ETA 00:17
+[yt-dlp:stdout] [download]  25.3% of   77.16MiB at    3.83MiB/s ETA 00:15
+[yt-dlp:stdout] [download]  25.4% of   77.16MiB at    1.54MiB/s ETA 00:37
+[yt-dlp:stdout] [download]  25.8% of   77.16MiB at    1.06MiB/s ETA 00:54
+[yt-dlp:stdout] [download]  26.4% of   77.16MiB at  949.75KiB/s ETA 01:01
+[yt-dlp:stdout] [download]  27.5% of   77.16MiB at  930.58KiB/s ETA 01:01
+[yt-dlp:stdout] [download]  28.6% of   77.16MiB at  891.69KiB/s ETA 01:03
+[yt-dlp:stdout] [download]  29.7% of   77.16MiB at  871.16KiB/s ETA 01:03
+[yt-dlp:stdout] [download]  30.7% of   77.16MiB at  954.04KiB/s ETA 00:57
+[yt-dlp:stdout] [download]  32.7% of   77.16MiB at 1011.30KiB/s ETA 00:52
+[yt-dlp:stdout] [download]  34.3% of   77.16MiB at    1.04MiB/s ETA 00:48
+[yt-dlp:stdout] [download]  36.1% of   77.16MiB at    1.16MiB/s ETA 00:42
+[yt-dlp:stdout] [download]  37.6% of   77.16MiB at    1.25MiB/s ETA 00:38
+[yt-dlp:stdout] [download]  37.6% of   77.16MiB at  Unknown B/s ETA Unknown
+[yt-dlp:stdout] [download]  37.6% of   77.16MiB at    2.08MiB/s ETA 00:23
+[yt-dlp:stdout] [download]  37.6% of   77.16MiB at    4.85MiB/s ETA 00:09
+[yt-dlp:stdout] [download]  37.6% of   77.16MiB at    5.68MiB/s ETA 00:08
+[yt-dlp:stdout] [download]  37.6% of   77.16MiB at   11.73MiB/s ETA 00:04
+[yt-dlp:stdout] [download]  37.6% of   77.16MiB at   16.26MiB/s ETA 00:02
+[yt-dlp:stdout] [download]  37.7% of   77.16MiB at   12.90MiB/s ETA 00:03
+[yt-dlp:stdout] [download]  37.9% of   77.16MiB at    1.86MiB/s ETA 00:25
+[yt-dlp:stdout] [download]  38.2% of   77.16MiB at  858.26KiB/s ETA 00:56
+[yt-dlp:stdout] [download]  38.8% of   77.16MiB at    1.29MiB/s ETA 00:36
+[yt-dlp:stdout] [download]  40.1% of   77.16MiB at    1.18MiB/s ETA 00:39
+[yt-dlp:stdout] [download]  41.6% of   77.16MiB at    1.47MiB/s ETA 00:30
+[yt-dlp:stdout] [download]  44.4% of   77.16MiB at    1.43MiB/s ETA 00:30
+[yt-dlp:stdout] [download]  46.2% of   77.16MiB at    1.41MiB/s ETA 00:29
+[yt-dlp:stdout] [download]  47.9% of   77.16MiB at    1.41MiB/s ETA 00:28
+[yt-dlp:stdout] [download]  49.7% of   77.16MiB at    1.45MiB/s ETA 00:26
+[yt-dlp:stdout] [download]  49.9% of   77.16MiB at    1.44MiB/s ETA 00:26
+[yt-dlp:stdout] [download]  49.9% of   77.16MiB at  682.44KiB/s ETA 00:57
+[yt-dlp:stdout] [download]  49.9% of   77.16MiB at    1.14MiB/s ETA 00:33
+[yt-dlp:stdout] [download]  50.0% of   77.16MiB at    1.86MiB/s ETA 00:20
+[yt-dlp:stdout] [download]  50.0% of   77.16MiB at    3.12MiB/s ETA 00:12
+[yt-dlp:stdout] [download]  50.0% of   77.16MiB at    4.53MiB/s ETA 00:08
+[yt-dlp:stdout] [download]  50.0% of   77.16MiB at    5.76MiB/s ETA 00:06
+[yt-dlp:stdout] [download]  50.1% of   77.16MiB at 1012.63KiB/s ETA 00:38
+[yt-dlp:stdout] [download]  50.3% of   77.16MiB at    1.62MiB/s ETA 00:23
+[yt-dlp:stdout] [download]  50.6% of   77.16MiB at    1.64MiB/s ETA 00:23
+[yt-dlp:stdout] [download]  51.2% of   77.16MiB at    2.35MiB/s ETA 00:16
+[yt-dlp:stdout] [download]  52.5% of   77.16MiB at    2.36MiB/s ETA 00:15
+[yt-dlp:stdout] [download]  55.1% of   77.16MiB at    2.20MiB/s ETA 00:15
+[yt-dlp:stdout] [download]  57.8% of   77.16MiB at    1.60MiB/s ETA 00:20
+[yt-dlp:stdout] [download]  59.1% of   77.16MiB at    1.54MiB/s ETA 00:20
+[yt-dlp:stdout] [download]  60.8% of   77.16MiB at    1.64MiB/s ETA 00:18
+[yt-dlp:stdout] [download]  62.7% of   77.16MiB at    1.73MiB/s ETA 00:16
+[yt-dlp:stdout] [download]  62.7% of   77.16MiB at  Unknown B/s ETA Unknown
+[yt-dlp:stdout] [download]  62.7% of   77.16MiB at  Unknown B/s ETA Unknown
+[yt-dlp:stdout] [download]  62.7% of   77.16MiB at    4.62MiB/s ETA 00:06
+[yt-dlp:stdout] [download]  62.8% of   77.16MiB at    9.90MiB/s ETA 00:02
+[yt-dlp:stdout] [download]  62.8% of   77.16MiB at   10.73MiB/s ETA 00:02
+[yt-dlp:stdout] [download]  62.8% of   77.16MiB at   12.33MiB/s ETA 00:02
+[yt-dlp:stdout] [download]  62.9% of   77.16MiB at   10.58MiB/s ETA 00:02
+[yt-dlp:stdout] [download]  63.1% of   77.16MiB at    1.07MiB/s ETA 00:26
+[yt-dlp:stdout] [download]  63.4% of   77.16MiB at    1.03MiB/s ETA 00:27
+[yt-dlp:stdout] [download]  64.0% of   77.16MiB at    1.31MiB/s ETA 00:21
+[yt-dlp:stdout] [download]  65.3% of   77.16MiB at    1.29MiB/s ETA 00:20
+[yt-dlp:stdout] [download]  67.0% of   77.16MiB at    1.45MiB/s ETA 00:17
+[yt-dlp:stdout] [download]  69.3% of   77.16MiB at    1.32MiB/s ETA 00:17
+[yt-dlp:stdout] [download]  70.8% of   77.16MiB at    1.26MiB/s ETA 00:17
+[yt-dlp:stdout] [download]  72.2% of   77.16MiB at    1.32MiB/s ETA 00:16
+[yt-dlp:stdout] [download]  74.4% of   77.16MiB at    1.30MiB/s ETA 00:15
+[yt-dlp:stdout] [download]  75.1% of   77.16MiB at    1.32MiB/s ETA 00:14
+[yt-dlp:stdout] [download]  75.1% of   77.16MiB at  Unknown B/s ETA Unknown
+[yt-dlp:stdout] [download]  75.1% of   77.16MiB at    2.19MiB/s ETA 00:08
+[yt-dlp:stdout] [download]  75.1% of   77.16MiB at    5.11MiB/s ETA 00:03
+[yt-dlp:stdout] [download]  75.1% of   77.16MiB at    5.78MiB/s ETA 00:03
+[yt-dlp:stdout] [download]  75.1% of   77.16MiB at  289.25KiB/s ETA 01:07
+[yt-dlp:stdout] [download]  75.2% of   77.16MiB at  576.08KiB/s ETA 00:34
+[yt-dlp:stdout] [download]  75.3% of   77.16MiB at  573.50KiB/s ETA 00:34
+[yt-dlp:stdout] [download]  75.4% of   77.16MiB at  993.68KiB/s ETA 00:19
+[yt-dlp:stdout] [download]  75.7% of   77.16MiB at  991.92KiB/s ETA 00:19
+[yt-dlp:stdout] [download]  76.4% of   77.16MiB at    1.40MiB/s ETA 00:13
+[yt-dlp:stdout] [download]  77.7% of   77.16MiB at    1.75MiB/s ETA 00:09
+[yt-dlp:stdout] [download]  80.3% of   77.16MiB at    1.75MiB/s ETA 00:08
+[yt-dlp:stdout] [download]  82.5% of   77.16MiB at    1.49MiB/s ETA 00:09
+[yt-dlp:stdout] [download]  84.0% of   77.16MiB at    1.48MiB/s ETA 00:08
+[yt-dlp:stdout] [download]  85.9% of   77.16MiB at    1.56MiB/s ETA 00:07
+[yt-dlp:stdout] [download]  87.9% of   77.16MiB at    1.56MiB/s ETA 00:06
+[yt-dlp:stdout] [download]  87.9% of   77.16MiB at  173.94KiB/s ETA 00:55
+[yt-dlp:stdout] [download]  87.9% of   77.16MiB at  521.81KiB/s ETA 00:18
+[yt-dlp:stdout] [download]  87.9% of   77.16MiB at    1.19MiB/s ETA 00:07
+[yt-dlp:stdout] [download]  87.9% of   77.16MiB at    2.13MiB/s ETA 00:04
+[yt-dlp:stdout] [download]  87.9% of   77.16MiB at  671.33KiB/s ETA 00:14
+[yt-dlp:stdout] [download]  88.0% of   77.16MiB at  735.81KiB/s ETA 00:12
+[yt-dlp:stdout] [download]  88.0% of   77.16MiB at  975.82KiB/s ETA 00:09
+[yt-dlp:stdout] [download]  88.2% of   77.16MiB at    1.40MiB/s ETA 00:06
+[yt-dlp:stdout] [download]  88.5% of   77.16MiB at    2.12MiB/s ETA 00:04
+[yt-dlp:stdout] [download]  89.2% of   77.16MiB at    2.16MiB/s ETA 00:03
+[yt-dlp:stdout] [download]  90.5% of   77.16MiB at    2.86MiB/s ETA 00:02
+[yt-dlp:stdout] [download]  93.1% of   77.16MiB at    4.01MiB/s ETA 00:01
+[yt-dlp:stdout] [download]  98.2% of   77.16MiB at    4.08MiB/s ETA 00:00
+[yt-dlp:stdout] [download] 100.0% of   77.16MiB at    4.02MiB/s ETA 00:00
+[yt-dlp:stdout] [download] 100% of   77.16MiB in 00:00:52 at 1.46MiB/s
+[yt-dlp:stdout] [download] Destination: D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.f140.m4a
+[yt-dlp:stdout] [download]   0.0% of    3.29MiB at  499.86KiB/s ETA 00:06
+[yt-dlp:stdout] [download]   0.1% of    3.29MiB at    1.46MiB/s ETA 00:03
+[yt-dlp:stdout] [download]   0.2% of    3.29MiB at    2.28MiB/s ETA 00:01
+[yt-dlp:stdout] [download]   0.4% of    3.29MiB at    3.66MiB/s ETA 00:00
+[yt-dlp:stdout] [download]   0.9% of    3.29MiB at  651.51KiB/s ETA 00:05
+[yt-dlp:stdout] [download]   1.9% of    3.29MiB at    1.27MiB/s ETA 00:02
+[yt-dlp:stdout] [download]   3.8% of    3.29MiB at  445.06KiB/s ETA 00:07
+[yt-dlp:stdout] [download]   7.6% of    3.29MiB at  890.48KiB/s ETA 00:03
+[yt-dlp:stdout] [download]  15.2% of    3.29MiB at    1.44MiB/s ETA 00:01
+[yt-dlp:stdout] [download]  30.4% of    3.29MiB at    1.54MiB/s ETA 00:01
+[yt-dlp:stdout] [download]  60.8% of    3.29MiB at  128.80KiB/s ETA 00:10
+[yt-dlp:stdout] [download]  76.0% of    3.29MiB at  159.34KiB/s ETA 00:05
+[yt-dlp:stdout] [download] 100.0% of    3.29MiB at  201.39KiB/s ETA 00:00
+[yt-dlp:stdout] [download] 100% of    3.29MiB in 00:00:16 at 199.07KiB/s
+[yt-dlp:stdout] [Merger] Merging formats into "D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.mp4"
+[yt-dlp] FFmpeg merge detected (stdout): [Merger] Merging formats into "D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.mp4"
+[yt-dlp] FFmpeg merge phase detected, starting 90s watchdog timer
+[yt-dlp:stdout] Deleting original file D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.f140.m4a (pass -k to keep)
+[yt-dlp:stdout] Deleting original file D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.f137.mp4 (pass -k to keep)
+[yt-dlp] Process exited (PID: 15072, code: 0, signal: null)
+[yt-dlp] Process closed (PID: 15072, code: 0, duration: 76.7s)
+[yt-dlp] End time: 2026-07-04T11:03:46.690Z
+[yt-dlp] Download successful (76.7s)
+Reels job 71057d08-7741-42bd-9465-3446f99922d7: Starting highlight detection
+[validation] Starting pre-validation for D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.mp4
+[validation] Source size: 80.52MB
+[validation] Output dir writable: D:\CutVideo\backend\temp\reels_71057d08-7741-42bd-9465-3446f99922d7
 [validation] FFmpeg: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
 [validation] FFprobe: D:\CutVideo\backend\node_modules\ffmpeg-static\ffprobe.exe
 [validation] FFprobe works
 [validation] Duration: 213.09s
-[validation] Resolution: 1280x720
+[validation] Resolution: 1920x1080 (requested quality: not specified)
 [validation] PASSED
-[detectScenes] Input: D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4
-[detectScenes] FFmpeg: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
-[detectScenes] Args: -i D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4 -vf select='gt(scene,0.3)',showinfo -f null -
-[detectScenes] Timeout: 1800000ms (30.0min)
-[detectSilence] Input: D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4
-[detectSilence] FFmpeg: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
-[detectSilence] Args: -i D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4 -af silencedetect=n=-30dB:d=0.5 -f null -
-[detectSilence] Timeout: 1800000ms (30.0min)
-[detectMotion] Input: D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4
-[detectMotion] FFmpeg: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
-[detectMotion] Args: -i D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4 -vf select='gt(scene,0.1)',metadata=print:file=- -f null -
-[detectMotion] Timeout: 1800000ms (30.0min)
-[detectAudioBeats] Input: D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4
-[detectAudioBeats] FFmpeg: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
-[detectAudioBeats] Args: -i D:\CutVideo\backend\temp\reels_source_9bc1b2df-d194-4c50-beea-511893b31f02_1783086091573.mp4 -af astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=- -f null -
-[detectAudioBeats] Timeout: 1800000ms (30.0min)
-[detectSilence] Completed in 24498ms (24.5s), exit code: 0, silences: 1
-[detectScenes] Completed in 24591ms (24.6s), exit code: 0, scenes: 67
-[detectMotion] Completed in 24599ms (24.6s), exit code: 0, motion pts: 0
+[detectVideoChanges] mode=full-rate, timeout=600s
+[detectVideoChanges] ffmpeg -i D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.mp4 -vf select='gt(scene,0.1)',metadata=print:file=- -f null -
+[detectAudioChanges] timeout=600s
+[detectAudioChanges] ffmpeg -i D:\CutVideo\backend\temp\reels_source_71057d08-7741-42bd-9465-3446f99922d7_1783162948281.mp4 -af silencedetect=n=-30dB:d=0.5,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=- -f null -
+[detectVideoChanges] Completed in 21942ms (21.9s), exit code: 0, scenes: 0, motion pts: 0

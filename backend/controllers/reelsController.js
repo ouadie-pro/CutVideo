@@ -1,6 +1,7 @@
 const youtubeService = require('../services/youtubeService');
 const reelsService = require('../services/reelsService');
 const referenceReelsService = require('../services/referenceReelsService');
+const aiAssistantClient = require('../services/aiAssistantClient');
 require('../services/ffmpegService');
 const { validateYouTubeUrl } = require('../utils/validators');
 const { cleanupFile, cleanupDirectory } = require('../utils/cleanup');
@@ -174,6 +175,16 @@ exports.downloadOne = (req, res) => {
     return res.status(404).json({ error: 'Reel not found' });
   }
 
+  if (reel.features && !reel.downloaded) {
+    reel.downloaded = true;
+    aiAssistantClient.recordFeedback({
+      jobId: job.id,
+      reelIndex: reel.index,
+      features: reel.features,
+      label: 1
+    });
+  }
+
   res.download(reel.path, reel.filename, err => {
     if (err) console.error('Reel download error:', err.message);
   });
@@ -192,6 +203,15 @@ exports.downloadAll = (req, res) => {
     const reel = job.reels[0];
     if (!fs.existsSync(reel.path)) {
       return res.status(404).json({ error: 'Reel not found' });
+    }
+    if (reel.features && !reel.downloaded) {
+      reel.downloaded = true;
+      aiAssistantClient.recordFeedback({
+        jobId: job.id,
+        reelIndex: reel.index,
+        features: reel.features,
+        label: 1
+      });
     }
     return res.download(reel.path, reel.filename, err => {
       if (err) console.error('Reel download error:', err.message);
@@ -239,6 +259,7 @@ async function processJob(jobId) {
       outputDir: job.outputDir,
       count: job.count,
       reelDuration: job.duration,
+      quality: job.quality,
       jobId: job.id,
       editOptions: job.editOptions,
       styleProfile: job.styleProfile,
@@ -248,7 +269,7 @@ async function processJob(jobId) {
       }
     });
 
-    job.reels = reels;
+    job.reels = reels.map(r => ({ ...r, downloaded: false }));
 
     for (const reel of reels) {
       if (!fs.existsSync(reel.path)) {
@@ -340,7 +361,7 @@ async function processJobWithReference(jobId) {
       }
     });
 
-    job.reels = reels;
+    job.reels = reels.map(r => ({ ...r, downloaded: false }));
 
     for (const reel of reels) {
       if (!fs.existsSync(reel.path)) {
@@ -394,7 +415,22 @@ async function processJobWithReference(jobId) {
   }
 }
 
+function recordNegativeFeedback(job) {
+  if (!job.reels || job.reels.length === 0) return;
+  for (const reel of job.reels) {
+    if (!reel.downloaded && reel.features) {
+      aiAssistantClient.recordFeedback({
+        jobId: job.id,
+        reelIndex: reel.index,
+        features: reel.features,
+        label: 0
+      });
+    }
+  }
+}
+
 function cleanupJobFiles(job) {
+  recordNegativeFeedback(job);
   if (job.zipPath) cleanupFile(job.zipPath).catch(() => {});
   if (job.outputDir) cleanupDirectory(job.outputDir).catch(() => {});
   jobs.delete(job.id);

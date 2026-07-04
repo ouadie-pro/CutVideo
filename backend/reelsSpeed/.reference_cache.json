@@ -1,0 +1,40 @@
+{
+  "WhatsApp Video 2026-07-02 at 14.43.32.mp4": {
+    "mtimeMs": 1782999878154.0088,
+    "analysis": {
+      "filename": "WhatsApp Video 2026-07-02 at 14.43.32.mp4",
+      "totalDuration": 24.437083,
+      "width": 368,
+      "height": 448,
+      "aspectRatio": "N/A",
+      "aspectTag": "custom 368:448",
+      "avgShotDuration": 2.221553,
+      "shotDurations": [
+        2.38333,
+        2.7666700000000004,
+        1.6999999999999993,
+        1.866670000000001,
+        2.750029999999999,
+        3.0166000000000004,
+        5.333400000000001,
+        1.3999999999999986,
+        1.0166000000000004,
+        0.01670000000000016,
+        2.187083000000001
+      ],
+      "cutsFrequency": 0.4092141439303537,
+      "editSpeed": "fast",
+      "pacing": "fast",
+      "movementIntensity": "medium",
+      "sceneCount": 10,
+      "silenceRatio": 0,
+      "audioEnergy": 0.5,
+      "brightness": 128,
+      "contrast": 40,
+      "saturation": 1,
+      "hasAudio": true,
+      "thumbnail": "D:\\CutVideo\\backend\\reelsSpeed\\.thumbs\\WhatsApp Video 2026-07-02 at 14.43.32.jpg",
+      "analyzedAt": 1783161697686
+    }
+  }
+}

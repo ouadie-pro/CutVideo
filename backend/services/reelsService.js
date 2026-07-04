@@ -27,6 +27,7 @@ const highlightAIService = require('./highlightAIService');
 const lexicalHighlightService = require('./lexicalHighlightService');
 const smartCropService = require('./smartCropService');
 const captionService = require('./captionService');
+const aiAssistantClient = require('./aiAssistantClient');
 
 function getFfmpegPath() {
   if (ffmpegStatic) return ffmpegStatic;
@@ -317,6 +318,171 @@ function detectAudioBeats(videoPath, videoDuration) {
       resolve([]);
     });
   });
+}
+
+function detectVideoChanges(videoPath, videoDuration) {
+  const ff = getFfmpegPath();
+  const isLongVideo = videoDuration > 30 * 60;
+  const fpsPrefix = isLongVideo ? 'fps=2,' : '';
+  const modeLabel = isLongVideo ? 'fps=2 sampling' : 'full-rate';
+  const timeoutMs = Math.min(Math.max((videoDuration || 600) * 3 * 1000, 3 * 60 * 1000), 10 * 60 * 1000);
+  console.log(`[detectVideoChanges] mode=${modeLabel}, timeout=${(timeoutMs/1000).toFixed(0)}s`);
+
+  function runPass(threshold) {
+    return new Promise((resolve) => {
+      const timestamps = [];
+      const args = [
+        '-i', videoPath,
+        '-vf', `${fpsPrefix}select='gt(scene,${threshold})',showinfo`,
+        '-f', 'null', '-'
+      ];
+      console.log(`[detectVideoChanges] pass threshold=${threshold} ${args.join(' ')}`);
+      const proc = spawn(ff, args, { windowsHide: true });
+      let stderr = '';
+
+      const timer = setTimeout(() => {
+        console.warn(`[detectVideoChanges] pass=${threshold} timed out after ${timeoutMs}ms`);
+        proc.kill();
+        resolve([]);
+      }, timeoutMs);
+
+      proc.stderr.on('data', (data) => {
+        const text = data.toString();
+        stderr += text;
+        let m;
+        const re = /pts_time:([\d.]+)/g;
+        while ((m = re.exec(text)) !== null) {
+          timestamps.push(parseFloat(m[1]));
+        }
+      });
+
+      proc.on('close', (code) => {
+        clearTimeout(timer);
+        if (code !== 0) {
+          console.warn(`[detectVideoChanges] pass=${threshold} non-zero exit. Stderr:\n${stderr.slice(-1000)}`);
+        }
+        resolve(timestamps);
+      });
+
+      proc.on('error', (err) => {
+        clearTimeout(timer);
+        console.error(`[detectVideoChanges] pass=${threshold} spawn error: ${err.message}`);
+        resolve([]);
+      });
+    });
+  }
+
+  const startTs = Date.now();
+  return Promise.all([runPass(0.3), runPass(0.1)]).then(([scenePts, motionPts]) => {
+    const elapsed = Date.now() - startTs;
+    const sceneSet = new Set(scenePts);
+    const motionScores = motionPts.filter(t => !sceneSet.has(t)).map(t => ({ time: t, score: 0.5 }));
+    console.log(`[detectVideoChanges] Completed in ${elapsed}ms (${(elapsed/1000).toFixed(1)}s), scenes: ${scenePts.length}, motion pts: ${motionScores.length}`);
+    return { scenes: scenePts, motionScores };
+  });
+}
+
+function detectAudioChanges(videoPath, videoDuration) {
+  return new Promise((resolve) => {
+    const intervals = [];
+    const beatPoints = [];
+    let current = null;
+    let prevRMS = 0;
+    const ff = getFfmpegPath();
+    const args = [
+      '-i', videoPath,
+      '-af', 'silencedetect=n=-30dB:d=0.5,astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.RMS_level:file=-',
+      '-f', 'null', '-'
+    ];
+    const startTs = Date.now();
+    const timeoutMs = Math.min(Math.max((videoDuration || 600) * 3 * 1000, 3 * 60 * 1000), 10 * 60 * 1000);
+    console.log(`[detectAudioChanges] timeout=${(timeoutMs/1000).toFixed(0)}s`);
+    console.log(`[detectAudioChanges] ffmpeg ${args.join(' ')}`);
+    const proc = spawn(ff, args, { windowsHide: true });
+    let stderr = '';
+
+    const timer = setTimeout(() => {
+      console.warn(`[detectAudioChanges] Timed out after ${timeoutMs}ms, killing process`);
+      console.error(`[detectAudioChanges] Partial stderr:\n${stderr.slice(-2000)}`);
+      proc.kill();
+      resolve({ silences: [], audioBeats: [] });
+    }, timeoutMs);
+
+    proc.stderr.on('data', (data) => {
+      stderr += data.toString();
+      const text = data.toString();
+      const lines = text.split('\n');
+      for (const line of lines) {
+        let m = line.match(/silence_start:\s+([\d.]+)/);
+        if (m) current = { start: parseFloat(m[1]) };
+        m = line.match(/silence_end:\s+([\d.]+)/);
+        if (m && current) {
+          current.end = parseFloat(m[1]);
+          intervals.push(current);
+          current = null;
+        }
+        m = line.match(/pts_time:([\d.]+).*lavfi.astats.Overall.RMS_level=([-\d.]+)/);
+        if (m) {
+          const time = parseFloat(m[1]);
+          const rms = Math.abs(parseFloat(m[2]));
+          if (rms > prevRMS * 1.5 && rms > 0.01) {
+            beatPoints.push({ time, intensity: rms });
+          }
+          prevRMS = rms;
+        }
+      }
+    });
+
+    proc.on('close', (code) => {
+      clearTimeout(timer);
+      const elapsed = Date.now() - startTs;
+      console.log(`[detectAudioChanges] Completed in ${elapsed}ms (${(elapsed/1000).toFixed(1)}s), exit code: ${code}, silences: ${intervals.length}, beats: ${beatPoints.length}`);
+      if (code !== 0) {
+        console.warn(`[detectAudioChanges] Non-zero exit. Stderr:\n${stderr.slice(-1000)}`);
+      }
+      resolve({ silences: intervals, audioBeats: beatPoints });
+    });
+
+    proc.on('error', (err) => {
+      clearTimeout(timer);
+      console.error(`[detectAudioChanges] Spawn error: ${err.message}`);
+      resolve({ silences: [], audioBeats: [] });
+    });
+  });
+}
+
+function computeHighlightFeatures(windowStart, windowEnd, scenes, motionScores, audioBeats, silences, transcriptSegments, totalDuration) {
+  const duration = windowEnd - windowStart;
+  const windowScenes = scenes.filter(s => s >= windowStart && s <= windowEnd);
+  const sceneCount = windowScenes.length;
+  const windowMotion = motionScores.filter(m => m.time >= windowStart && m.time <= windowEnd);
+  const avgMotion = windowMotion.length > 0
+    ? windowMotion.reduce((a, m) => a + m.score, 0) / windowMotion.length
+    : 0;
+  const beatCount = audioBeats.filter(b => b.time >= windowStart && b.time <= windowEnd).length;
+  const silDur = silences
+    .filter(s => s.start < windowEnd && s.end > windowStart)
+    .reduce((a, s) => a + Math.min(s.end, windowEnd) - Math.max(s.start, windowStart), 0);
+  const silenceRatio = duration > 0 ? silDur / duration : 0;
+  const center = (windowStart + windowEnd) / 2;
+  const normPos = totalDuration > 0 ? center / totalDuration : 0.5;
+  let lexicalScore = 0;
+  if (transcriptSegments && transcriptSegments.length > 0) {
+    for (const seg of transcriptSegments) {
+      if (seg.start < windowEnd && seg.end > windowStart) {
+        lexicalScore += lexicalHighlightService.scoreSegmentText(seg.text, seg.start, seg.end);
+      }
+    }
+  }
+  return {
+    sceneCount: Math.round(sceneCount),
+    avgMotion: Math.round(avgMotion * 10000) / 10000,
+    beatCount: Math.round(beatCount),
+    silenceRatio: Math.round(silenceRatio * 10000) / 10000,
+    normPos: Math.round(normPos * 10000) / 10000,
+    lexicalScore: Math.round(lexicalScore),
+    windowDuration: Math.round(duration * 100) / 100
+  };
 }
 
 function scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile, transcript) {
@@ -701,7 +867,7 @@ function extractThumbnail(videoPath, outputPath) {
   });
 }
 
-async function validateVideoForReels(videoPath, outputDir) {
+async function validateVideoForReels(videoPath, outputDir, quality) {
   console.log(`[validation] Starting pre-validation for ${videoPath}`);
 
   // 1. Source video exists
@@ -785,9 +951,14 @@ async function validateVideoForReels(videoPath, outputDir) {
 
   // 8. Resolution / codec
   const dims = await getInputDimensions(videoPath);
-  console.log(`[validation] Resolution: ${dims.width}x${dims.height}`);
-  if (dims.width < 480 || dims.height < 480) {
-    throw new Error(`Video resolution too low: ${dims.width}x${dims.height} (minimum 480x480)`);
+  const smallestDim = Math.min(dims.width, dims.height);
+  console.log(`[validation] Resolution: ${dims.width}x${dims.height} (requested quality: ${quality || 'not specified'})`);
+  if (smallestDim < 360) {
+    throw new Error(
+      `Video resolution too low: ${dims.width}x${dims.height} (smallest dimension ${smallestDim}px, minimum 360px). ` +
+      `This source video's best available stream is only ${dims.width}x${dims.height}. ` +
+      `A higher-resolution source is not available for this video.`
+    );
   }
 
   // 9. Temp dir writable
@@ -802,20 +973,21 @@ async function validateVideoForReels(videoPath, outputDir) {
 }
 
 async function generateReels(options) {
-  const { videoPath, outputDir, count, reelDuration, onProgress, styleProfile } = options;
+  const { videoPath, outputDir, count, reelDuration, onProgress, styleProfile, quality } = options;
   const editOpts = options.editOptions || {};
 
-  await validateVideoForReels(videoPath, outputDir);
+  await validateVideoForReels(videoPath, outputDir, quality);
+
+  const ANALYSIS_DEADLINE_MS = 12 * 60 * 1000;
+  const analysisStartMs = Date.now();
 
   onProgress(0, 'analyzing video');
 
   const totalDuration = await getDuration(videoPath);
 
-  const [scenes, silences, motionScores, audioBeats] = await Promise.all([
-    detectScenes(videoPath, totalDuration),
-    detectSilence(videoPath, totalDuration),
-    detectMotion(videoPath, totalDuration),
-    detectAudioBeats(videoPath, totalDuration)
+  const [{ scenes, motionScores }, { silences, audioBeats }] = await Promise.all([
+    detectVideoChanges(videoPath, totalDuration),
+    detectAudioChanges(videoPath, totalDuration)
   ]);
 
   let highlights = null;
@@ -823,7 +995,16 @@ async function generateReels(options) {
   onProgress(5, 'transcribing');
   const transcript = await transcriptionService.transcribeAudio(videoPath);
 
-  if (transcript.segments.length > 0 && process.env.ENABLE_AI_HIGHLIGHTS !== 'false') {
+  const analysisElapsed = Date.now() - analysisStartMs;
+  const aiEnabled = transcript.segments.length > 0
+    && process.env.ENABLE_AI_HIGHLIGHTS !== 'false'
+    && analysisElapsed < ANALYSIS_DEADLINE_MS;
+
+  if (!aiEnabled && analysisElapsed >= ANALYSIS_DEADLINE_MS) {
+    console.warn(`[generateReels] Analysis deadline (${ANALYSIS_DEADLINE_MS/1000}s) reached after ${(analysisElapsed/1000).toFixed(0)}s, skipping AI selection`);
+  }
+
+  if (aiEnabled) {
     try {
       onProgress(10, 'selecting highlights with AI');
       const aiOptions = { transcript, totalDuration, count, reelDuration };
@@ -847,6 +1028,24 @@ async function generateReels(options) {
     }
   }
 
+  if (!highlights && aiAssistantClient.isAvailable()) {
+    try {
+      onProgress(10, 'selecting highlights with AI assistant');
+      const payload = { scenes, motionScores, silences, audioBeats, totalDuration, count, reelDuration, transcriptSegments: transcript.segments };
+      const assistantHighlights = await aiAssistantClient.analyze(payload);
+      if (assistantHighlights && assistantHighlights.length > 0) {
+        console.log(`AI assistant selected ${assistantHighlights.length} highlights`);
+        highlights = assistantHighlights.map(h => ({
+          start: h.start, end: h.end, score: h.score, features: h.features
+        }));
+      } else {
+        console.warn('AI assistant returned zero highlights, falling back to heuristic');
+      }
+    } catch (assistErr) {
+      console.warn(`AI assistant selection failed: ${assistErr.message}, falling back to heuristic`);
+    }
+  }
+
   if (!highlights) {
     highlights = scoreHighlights(totalDuration, scenes, silences, motionScores, audioBeats, count, reelDuration, styleProfile, transcript);
   }
@@ -855,6 +1054,11 @@ async function generateReels(options) {
     const mid = totalDuration / 2;
     highlights.push({ start: Math.max(0, mid - reelDuration / 2), end: Math.min(totalDuration, mid + reelDuration / 2), score: 0 });
   }
+
+  highlights = highlights.map(h => ({
+    ...h,
+    features: h.features || computeHighlightFeatures(h.start, h.end, scenes, motionScores, audioBeats, silences, transcript.segments, totalDuration)
+  }));
 
   let fullCropPath = null;
   if (editOpts.smartCrop !== false) {
@@ -926,7 +1130,8 @@ async function generateReels(options) {
           filename: `reel_${idx}.mp4`,
           startTime: h.start,
           title: h.title,
-          reason: h.reason
+          reason: h.reason,
+          features: h.features
         };
       } catch (err) {
         console.error(`Reel ${idx} generation failed: ${err.message}`);
@@ -1115,11 +1320,9 @@ async function generateReelsWithReference(options) {
 
   const totalDuration = await getDuration(videoPath);
 
-  const [scenes, silences, motionScores, audioBeats] = await Promise.all([
-    detectScenes(videoPath, totalDuration),
-    detectSilence(videoPath, totalDuration),
-    detectMotion(videoPath, totalDuration),
-    detectAudioBeats(videoPath, totalDuration)
+  const [{ scenes, motionScores }, { silences, audioBeats }] = await Promise.all([
+    detectVideoChanges(videoPath, totalDuration),
+    detectAudioChanges(videoPath, totalDuration)
   ]);
 
   const reelGroups = matchHighlightsToReference(

@@ -1,0 +1,14 @@
+[aiAssistantClient] Required Python packages (fastapi, uvicorn, sklearn, etc.) not installed.
+[aiAssistantClient] Run: pip install -r "D:\CutVideo\backend\python\ai_assistant\requirements.txt"
+[yt-dlp:stderr] ERROR: unable to download video data: HTTP Error 403: Forbidden
+[yt-dlp] Errors: ERROR: unable to download video data: HTTP Error 403: Forbidden
+[yt-dlp] Download failed (code: 1): Access forbidden (HTTP 403). The video may be restricted.
+Reels job 54155f91-a91d-4c62-ae79-d1ad3c379fea: Error Access forbidden (HTTP 403). The video may be restricted.
+Reels job 54155f91-a91d-4c62-ae79-d1ad3c379fea: Stack Error: Access forbidden (HTTP 403). The video may be restricted.
+    at ChildProcess.<anonymous> (D:\CutVideo\backend\services\youtubeService.js:480:18)
+    at ChildProcess.emit (node:events:508:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+Reels job 54155f91-a91d-4c62-ae79-d1ad3c379fea: Request body {"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","count":3,"duration":30}
+Reels job 54155f91-a91d-4c62-ae79-d1ad3c379fea: Video path D:\CutVideo\backend\temp\reels_source_54155f91-a91d-4c62-ae79-d1ad3c379fea_1783162912941.mp4
+Reels job 54155f91-a91d-4c62-ae79-d1ad3c379fea: Output dir D:\CutVideo\backend\temp\reels_54155f91-a91d-4c62-ae79-d1ad3c379fea

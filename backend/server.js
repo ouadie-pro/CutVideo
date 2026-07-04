@@ -7,6 +7,7 @@ const analyzeRoutes = require('./routes/analyze');
 const cutRoutes = require('./routes/cut');
 const reelsRoutes = require('./routes/reels');
 const referenceReelsRoutes = require('./routes/referenceReels');
+const aiAssistantClient = require('./services/aiAssistantClient');
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('UNHANDLED REJECTION:', reason instanceof Error ? reason.stack : reason);
@@ -51,6 +52,12 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err.message);
   res.status(500).json({ error: 'Internal server error' });
 });
+
+aiAssistantClient.startService();
+
+process.on('exit', () => aiAssistantClient.stopService());
+process.on('SIGINT', () => { aiAssistantClient.stopService(); process.exit(0); });
+process.on('SIGTERM', () => { aiAssistantClient.stopService(); process.exit(0); });
 
 app.listen(PORT, () => {
   console.log(`CutVideo backend running on http://localhost:${PORT}`);

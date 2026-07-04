@@ -1,0 +1,58 @@
+[referenceReels] REELS_DIR = D:\CutVideo\backend\reelsSpeed
+[referenceReels] Files in dir: 7, Supported videos: 5
+[referenceReels] Videos: WhatsApp Video 2026-07-02 at 14.43.05.mp4, WhatsApp Video 2026-07-02 at 14.43.12.mp4, WhatsApp Video 2026-07-02 at 14.43.32.mp4, WhatsApp Video 2026-07-02 at 14.44.01.mp4, WhatsApp Video 2026-07-02 at 14.44.04.mp4
+CutVideo backend running on http://localhost:5000
+Reels job 54155f91-a91d-4c62-ae79-d1ad3c379fea: Starting download
+Using yt-dlp engine (via yt-dlp-exec)
+FFmpeg detection:
+  path: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
+  exists: true
+  size: 82797568
+  isFile: true
+  --ffmpeg-location value: D:\CutVideo\backend\node_modules\ffmpeg-static\ffmpeg.exe
+[yt-dlp] Executing: "D:\CutVideo\backend\node_modules\yt-dlp-exec\bin\yt-dlp.exe" -f bestvideo[vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo+bestaudio/best -o D:\CutVideo\backend\temp\reels_source_54155f91-a91d-4c62-ae79-d1ad3c379fea_1783162912941.mp4 --no-playlist --merge-output-format mp4 --extractor-retries 3 --newline --progress --no-color --js-runtimes node https://www.youtube.com/watch?v=dQw4w9WgXcQ --ffmpeg-location D:\CutVideo\backend\node_modules\ffmpeg-static
+[yt-dlp] Output path (resolved): D:\CutVideo\backend\temp\reels_source_54155f91-a91d-4c62-ae79-d1ad3c379fea_1783162912941.mp4
+[yt-dlp] FFmpeg location: D:\CutVideo\backend\node_modules\ffmpeg-static
+[yt-dlp] Start time: 2026-07-04T11:01:55.195Z
+[yt-dlp] Spawned PID: 12840
+[yt-dlp] Idle timeout set: 300s of inactivity
+[yt-dlp:stdout] [youtube] Extracting URL: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+[yt-dlp:stdout] [youtube] dQw4w9WgXcQ: Downloading webpage
+[yt-dlp:stdout] [youtube] dQw4w9WgXcQ: Downloading android vr player API JSON
+[yt-dlp:stdout] [youtube] dQw4w9WgXcQ: Downloading player 4918c89a-main
+[yt-dlp:stdout] [youtube] [jsc:node] Solving JS challenges using node
+[yt-dlp:stdout] [youtube] dQw4w9WgXcQ: Downloading m3u8 information
+[yt-dlp:stdout] [info] dQw4w9WgXcQ: Downloading 1 format(s): 137+140
+[yt-dlp:stdout] [download] Destination: D:\CutVideo\backend\temp\reels_source_54155f91-a91d-4c62-ae79-d1ad3c379fea_1783162912941.f137.mp4
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at  Unknown B/s ETA Unknown
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at    1.47MiB/s ETA 00:52
+[download]   0.0% of   77.16MiB at    3.42MiB/s ETA 00:22
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at  388.35KiB/s ETA 03:23
+[yt-dlp:stdout] [download]   0.0% of   77.16MiB at  781.97KiB/s ETA 01:41
+[download]   0.1% of   77.16MiB at    1.48MiB/s ETA 00:52
+[yt-dlp:stdout] [download]   0.2% of   77.16MiB at    2.91MiB/s ETA 00:26
+[yt-dlp:stdout] [download]   0.3% of   77.16MiB at    1.76MiB/s ETA 00:43
+[yt-dlp:stdout] [download]   0.6% of   77.16MiB at    1.27MiB/s ETA 01:00
+[yt-dlp:stdout] [download]   1.3% of   77.16MiB at    1.79MiB/s ETA 00:42
+[yt-dlp:stdout] [download]   2.6% of   77.16MiB at    2.95MiB/s ETA 00:25
+[yt-dlp:stdout] [download]   5.2% of   77.16MiB at    2.55MiB/s ETA 00:28
+[yt-dlp:stdout] [download]   8.1% of   77.16MiB at    2.24MiB/s ETA 00:31
+[yt-dlp:stdout] [download]  10.5% of   77.16MiB at    2.07MiB/s ETA 00:33
+[yt-dlp:stdout] [download]  12.5% of   77.16MiB at    2.08MiB/s ETA 00:32
+[yt-dlp:stdout] [download]  12.5% of   77.16MiB at  264.14KiB/s ETA 04:21
+[yt-dlp:stdout] [download]  12.5% of   77.16MiB at  616.87KiB/s ETA 01:52
+[download]  12.5% of   77.16MiB at    1.41MiB/s ETA 00:48
+[download]  12.6% of   77.16MiB at    3.01MiB/s ETA 00:22
+[yt-dlp:stdout] [download]  12.6% of   77.16MiB at  515.06KiB/s ETA 02:14
+[yt-dlp:stdout] [download]  12.6% of   77.16MiB at  594.02KiB/s ETA 01:56
+[yt-dlp:stdout] [download]  12.7% of   77.16MiB at  804.74KiB/s ETA 01:25
+[yt-dlp:stdout] [download]  12.9% of   77.16MiB at    1.14MiB/s ETA 00:59
+[yt-dlp:stdout] [download]  13.2% of   77.16MiB at    1.70MiB/s ETA 00:39
+[yt-dlp:stdout] [download]  13.8% of   77.16MiB at    2.23MiB/s ETA 00:29
+[yt-dlp:stdout] [download]  15.1% of   77.16MiB at    2.35MiB/s ETA 00:27
+[yt-dlp:stdout] [download]  17.7% of   77.16MiB at    2.99MiB/s ETA 00:21
+[yt-dlp:stdout] [download]  22.9% of   77.16MiB at    3.19MiB/s ETA 00:18
+[yt-dlp:stdout] [download]  25.3% of   77.16MiB at    3.12MiB/s ETA 00:18
+[yt-dlp] Process exited (PID: 12840, code: 1, signal: null)
+[yt-dlp] Process closed (PID: 12840, code: 1, duration: 15.9s)
+[yt-dlp] End time: 2026-07-04T11:02:11.055Z

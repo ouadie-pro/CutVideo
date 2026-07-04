@@ -265,204 +265,246 @@ async function downloadVideo(url, quality, outputPath, onProgress, startTime, en
 }
 
 async function downloadWithYtDlp(url, quality, outputPath, onProgress, startTime, endTime) {
-  return new Promise((resolve, reject) => {
-    checkYtDlp();
-    const cmd = ytDlpExecPath || (process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
-    const height = parseInt(quality) || 0;
+  checkYtDlp();
+  const cmd = ytDlpExecPath || (process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
+  const height = parseInt(quality) || 0;
 
-    // ROOT CAUSE FIX: Use single-stream format to avoid FFmpeg merge hang.
-    // bestvideo+bestaudio requires FFmpeg to merge separate video/audio streams.
-    // On Windows, ffmpeg-static's FFmpeg binary can hang during merge (e.g. opus->AAC
-    // re-encode for mp4 container), causing yt-dlp to wait forever.
-    // best[height<=N] downloads a pre-muxed stream (combined video+audio).
-    // No FFmpeg merge needed -> no hang.
-    const formatStr = height > 0
-      ? `best[height<=${height}]`
-      : 'best';
+  // Adaptive format: prefers H.264 (avc1) video + AAC (m4a) audio so ffmpeg only
+  // needs to remux (fast container copy), not re-encode.  Falls back to any
+  // video+audio at the requested height, then to progressive (pre-muxed).
+  const adaptiveFormatStr = height > 0
+    ? `bestvideo[height<=${height}][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]`
+    : 'bestvideo[vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo+bestaudio/best';
 
-    const hasNode = checkNodeJsRuntime();
-    const jsRuntimeArgs = hasNode ? ['--js-runtimes', 'node'] : [];
+  // Progressive-only fallback: safe, no merge needed, but capped at ~360p.
+  const progressiveFormatStr = height > 0
+    ? `best[height<=${height}]`
+    : 'best';
 
-    const args = [
-      '-f', formatStr,
-      '-o', outputPath,
-      '--no-playlist',
-      '--extractor-retries', '3',
-      '--newline',
-      '--progress',
-      '--no-color',
-      ...jsRuntimeArgs,
-      url
-    ];
+  async function doDownload(formatStr, isRetry) {
+    return new Promise((resolve, reject) => {
+      const hasNode = checkNodeJsRuntime();
+      const jsRuntimeArgs = hasNode ? ['--js-runtimes', 'node'] : [];
 
-    const ffmpegPath = resolveFfmpegPath();
-    if (ffmpegPath) {
-      args.push('--ffmpeg-location', path.dirname(path.resolve(ffmpegPath)));
-    } else {
-      const err = new Error('FFmpeg not found. The project requires FFmpeg for video processing. Please ensure ffmpeg-static is properly installed.');
-      console.error(err.message);
-      return reject(err);
-    }
+      const args = [
+        '-f', formatStr,
+        '-o', outputPath,
+        '--no-playlist',
+        '--merge-output-format', 'mp4',
+        '--extractor-retries', '3',
+        '--newline',
+        '--progress',
+        '--no-color',
+        ...jsRuntimeArgs,
+        url
+      ];
 
-    const resolvedOutputPath = path.resolve(outputPath);
+      const ffmpegPath = resolveFfmpegPath();
+      if (ffmpegPath) {
+        args.push('--ffmpeg-location', path.dirname(path.resolve(ffmpegPath)));
+      } else {
+        const err = new Error('FFmpeg not found. The project requires FFmpeg for video processing. Please ensure ffmpeg-static is properly installed.');
+        console.error(err.message);
+        return reject(err);
+      }
 
-    console.log(`[yt-dlp] Executing: "${cmd}" ${args.join(' ')}`);
-    console.log(`[yt-dlp] Output path (resolved): ${resolvedOutputPath}`);
-    console.log(`[yt-dlp] FFmpeg location: ${path.dirname(path.resolve(ffmpegPath))}`);
-    console.log(`[yt-dlp] Start time: ${new Date().toISOString()}`);
+      const resolvedOutputPath = path.resolve(outputPath);
 
-    const startTimeMs = Date.now();
+      console.log(`[yt-dlp]${isRetry ? ' [RETRY progressive]' : ''} Executing: "${cmd}" ${args.join(' ')}`);
+      console.log(`[yt-dlp]${isRetry ? ' [RETRY]' : ''} Output path (resolved): ${resolvedOutputPath}`);
+      console.log(`[yt-dlp]${isRetry ? ' [RETRY]' : ''} FFmpeg location: ${path.dirname(path.resolve(ffmpegPath))}`);
+      console.log(`[yt-dlp]${isRetry ? ' [RETRY]' : ''} Start time: ${new Date().toISOString()}`);
 
-    const env = {
-      ...process.env,
-      PYTHONUNBUFFERED: '1',
-      PYTHONIOENCODING: 'utf-8'
-    };
+      const startTimeMs = Date.now();
 
-    const proc = spawn(cmd, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      windowsHide: true,
-      env: env
-    });
+      const env = {
+        ...process.env,
+        PYTHONUNBUFFERED: '1',
+        PYTHONIOENCODING: 'utf-8'
+      };
 
-    let settled = false;
-    let stderr = '';
-    let stdout = '';
-    let stdoutBuffer = '';
-    let stderrBuffer = '';
-    let timeoutTimer = null;
-    let lastActivityTime = Date.now();
-    let lastProgress = 0;
+      const proc = spawn(cmd, args, {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true,
+        env: env
+      });
 
-    console.log(`[yt-dlp] Spawned PID: ${proc.pid}`);
+      let settled = false;
+      let stderr = '';
+      let stdout = '';
+      let stdoutBuffer = '';
+      let stderrBuffer = '';
+      let timeoutTimer = null;
+      let mergeWatchdogTimer = null;
+      let lastActivityTime = Date.now();
+      let lastProgress = 0;
 
-    const progressRegex = /\[download\]\s+(\d+\.?\d*)%/;
-    const mergeDetectRegex = /\[merge\]|\[ffmpeg\]|Merging formats/i;
+      console.log(`[yt-dlp]${isRetry ? ' [RETRY]' : ''} Spawned PID: ${proc.pid}`);
 
-    const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+      const progressRegex = /\[download\]\s+(\d+\.?\d*)%/;
+      const mergeDetectRegex = /\[merge\]|\[ffmpeg\]|Merging formats/i;
 
-    function resetIdleTimeout() {
-      lastActivityTime = Date.now();
-      if (timeoutTimer) clearTimeout(timeoutTimer);
-      timeoutTimer = setTimeout(() => {
+      const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+      const MERGE_WATCHDOUT_MS = 90 * 1000;
+
+      function resetIdleTimeout() {
+        lastActivityTime = Date.now();
+        if (timeoutTimer) clearTimeout(timeoutTimer);
+        timeoutTimer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          const elapsed = ((Date.now() - startTimeMs) / 1000).toFixed(1);
+          const idleFor = ((Date.now() - lastActivityTime) / 1000).toFixed(1);
+          console.error(`[yt-dlp] Idle timeout: no activity for ${idleFor}s (total: ${elapsed}s). Last progress: ${lastProgress}%. Killing process tree...`);
+          clearMergeWatchdog();
+          killProcessTree(proc.pid);
+          reject(new Error(`Download timed out: no activity for 5 minutes`));
+        }, IDLE_TIMEOUT_MS);
+      }
+
+      function startMergeWatchdog() {
+        if (mergeWatchdogTimer) return;
+        console.log(`[yt-dlp] FFmpeg merge phase detected, starting ${MERGE_WATCHDOUT_MS / 1000}s watchdog timer`);
+        mergeWatchdogTimer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutTimer);
+          console.error(`[yt-dlp] Merge watchdog timeout: ffmpeg merge did not complete within ${MERGE_WATCHDOUT_MS / 1000}s. Killing process tree...`);
+          killProcessTree(proc.pid);
+          reject(new Error(`__MERGE_TIMEOUT__`));
+        }, MERGE_WATCHDOUT_MS);
+      }
+
+      function clearMergeWatchdog() {
+        if (mergeWatchdogTimer) {
+          clearTimeout(mergeWatchdogTimer);
+          mergeWatchdogTimer = null;
+        }
+      }
+
+      resetIdleTimeout();
+      console.log(`[yt-dlp]${isRetry ? ' [RETRY]' : ''} Idle timeout set: ${IDLE_TIMEOUT_MS / 1000}s of inactivity`);
+
+      proc.stdout.on('data', (data) => {
+        const text = data.toString();
+        process.stdout.write(`[yt-dlp:stdout]${isRetry ? ' [RETRY]' : ''} ${text}`);
+        stdout += text;
+        stdoutBuffer += text;
+
+        const lines = stdoutBuffer.split('\n');
+        stdoutBuffer = lines.pop();
+
+        for (const line of lines) {
+          if (mergeDetectRegex.test(line)) {
+            console.log(`[yt-dlp] FFmpeg merge detected (stdout): ${line.trim()}`);
+            startMergeWatchdog();
+          }
+          const match = line.match(progressRegex);
+          if (match) {
+            lastProgress = parseFloat(match[1]);
+            if (onProgress) {
+              onProgress(lastProgress);
+            }
+          }
+        }
+
+        resetIdleTimeout();
+      });
+
+      proc.stderr.on('data', (data) => {
+        const text = data.toString();
+        process.stderr.write(`[yt-dlp:stderr]${isRetry ? ' [RETRY]' : ''} ${text}`);
+        stderr += text;
+        stderrBuffer += text;
+
+        const lines = stderrBuffer.split('\n');
+        stderrBuffer = lines.pop();
+
+        for (const line of lines) {
+          if (mergeDetectRegex.test(line)) {
+            console.log(`[yt-dlp] FFmpeg merge detected (stderr): ${line.trim()}`);
+            startMergeWatchdog();
+          }
+          const match = line.match(progressRegex);
+          if (match) {
+            lastProgress = parseFloat(match[1]);
+            if (onProgress) {
+              onProgress(lastProgress);
+            }
+          }
+        }
+
+        resetIdleTimeout();
+      });
+
+      proc.on('exit', (code, signal) => {
+        console.log(`[yt-dlp] Process exited (PID: ${proc.pid}, code: ${code}, signal: ${signal})`);
+      });
+
+      proc.on('close', (code) => {
+        if (settled) {
+          console.log(`[yt-dlp] Close event skipped (already settled). Code: ${code}`);
+          return;
+        }
+        clearTimeout(timeoutTimer);
+        clearMergeWatchdog();
+
+        const duration = ((Date.now() - startTimeMs) / 1000).toFixed(1);
+        console.log(`[yt-dlp] Process closed (PID: ${proc.pid}, code: ${code}, duration: ${duration}s)`);
+        console.log(`[yt-dlp] End time: ${new Date().toISOString()}`);
+
+        if (stderr.trim()) {
+          if (code === 0) {
+            console.warn(`[yt-dlp] Warnings: ${stderr.trim()}`);
+          } else {
+            console.error(`[yt-dlp] Errors: ${stderr.trim()}`);
+          }
+        }
+
+        const fileExists = fs.existsSync(resolvedOutputPath);
+
+        if (code === 0 && fileExists) {
+          console.log(`[yt-dlp] Download successful (${duration}s)`);
+          settled = true;
+          resolve(resolvedOutputPath);
+        } else if (code === 0 && !fileExists) {
+          settled = true;
+          const errMsg = `Download reported success (code 0) but output file is missing: ${resolvedOutputPath}`;
+          console.error(`[yt-dlp] ${errMsg}`);
+          reject(new Error(errMsg));
+        } else {
+          settled = true;
+          const friendlyError = parseYtDlpErrors(stderr);
+          const errMsg = friendlyError || (stderr + stdout).slice(-500).trim();
+          console.error(`[yt-dlp] Download failed (code: ${code}): ${errMsg}`);
+          reject(new Error(errMsg || `Download failed with exit code ${code}`));
+        }
+      });
+
+      proc.on('error', (err) => {
         if (settled) return;
         settled = true;
-        const elapsed = ((Date.now() - startTimeMs) / 1000).toFixed(1);
-        const idleFor = ((Date.now() - lastActivityTime) / 1000).toFixed(1);
-        console.error(`[yt-dlp] Idle timeout: no activity for ${idleFor}s (total: ${elapsed}s). Last progress: ${lastProgress}%. Killing process tree...`);
-        killProcessTree(proc.pid);
-        reject(new Error(`Download timed out: no activity for 5 minutes`));
-      }, IDLE_TIMEOUT_MS);
+        clearTimeout(timeoutTimer);
+        clearMergeWatchdog();
+        console.error(`[yt-dlp] Spawn error: ${err.message}`);
+        reject(new Error(`yt-dlp error: ${err.message}`));
+      });
+
+      proc.on('disconnect', () => {
+        console.log(`[yt-dlp] Process disconnected (PID: ${proc.pid})`);
+      });
+    });
+  }
+
+  try {
+    return await doDownload(adaptiveFormatStr, false);
+  } catch (err) {
+    if (err.message === '__MERGE_TIMEOUT__') {
+      console.log(`[yt-dlp] Adaptive-stream merge timed out; retrying with progressive-only format for ${url}`);
+      return await doDownload(progressiveFormatStr, true);
     }
-
-    resetIdleTimeout();
-    console.log(`[yt-dlp] Idle timeout set: ${IDLE_TIMEOUT_MS / 1000}s of inactivity`);
-
-    proc.stdout.on('data', (data) => {
-      const text = data.toString();
-      process.stdout.write(`[yt-dlp:stdout] ${text}`);
-      stdout += text;
-      stdoutBuffer += text;
-
-      const lines = stdoutBuffer.split('\n');
-      stdoutBuffer = lines.pop();
-
-      for (const line of lines) {
-        if (mergeDetectRegex.test(line)) {
-          console.log(`[yt-dlp] FFmpeg merge detected (stdout): ${line.trim()}`);
-        }
-        const match = line.match(progressRegex);
-        if (match) {
-          lastProgress = parseFloat(match[1]);
-          if (onProgress) {
-            onProgress(lastProgress);
-          }
-        }
-      }
-
-      resetIdleTimeout();
-    });
-
-    proc.stderr.on('data', (data) => {
-      const text = data.toString();
-      process.stderr.write(`[yt-dlp:stderr] ${text}`);
-      stderr += text;
-      stderrBuffer += text;
-
-      const lines = stderrBuffer.split('\n');
-      stderrBuffer = lines.pop();
-
-      for (const line of lines) {
-        if (mergeDetectRegex.test(line)) {
-          console.log(`[yt-dlp] FFmpeg merge detected (stderr): ${line.trim()}`);
-        }
-        const match = line.match(progressRegex);
-        if (match) {
-          lastProgress = parseFloat(match[1]);
-          if (onProgress) {
-            onProgress(lastProgress);
-          }
-        }
-      }
-
-      resetIdleTimeout();
-    });
-
-    proc.on('exit', (code, signal) => {
-      console.log(`[yt-dlp] Process exited (PID: ${proc.pid}, code: ${code}, signal: ${signal})`);
-    });
-
-    proc.on('close', (code) => {
-      if (settled) {
-        console.log(`[yt-dlp] Close event skipped (already settled). Code: ${code}`);
-        return;
-      }
-      clearTimeout(timeoutTimer);
-
-      const duration = ((Date.now() - startTimeMs) / 1000).toFixed(1);
-      console.log(`[yt-dlp] Process closed (PID: ${proc.pid}, code: ${code}, duration: ${duration}s)`);
-      console.log(`[yt-dlp] End time: ${new Date().toISOString()}`);
-
-      if (stderr.trim()) {
-        if (code === 0) {
-          console.warn(`[yt-dlp] Warnings: ${stderr.trim()}`);
-        } else {
-          console.error(`[yt-dlp] Errors: ${stderr.trim()}`);
-        }
-      }
-
-      const fileExists = fs.existsSync(resolvedOutputPath);
-
-      if (code === 0 && fileExists) {
-        console.log(`[yt-dlp] Download successful (${duration}s)`);
-        settled = true;
-        resolve(resolvedOutputPath);
-      } else if (code === 0 && !fileExists) {
-        settled = true;
-        const errMsg = `Download reported success (code 0) but output file is missing: ${resolvedOutputPath}`;
-        console.error(`[yt-dlp] ${errMsg}`);
-        reject(new Error(errMsg));
-      } else {
-        settled = true;
-        const friendlyError = parseYtDlpErrors(stderr);
-        const errMsg = friendlyError || (stderr + stdout).slice(-500).trim();
-        console.error(`[yt-dlp] Download failed (code: ${code}): ${errMsg}`);
-        reject(new Error(errMsg || `Download failed with exit code ${code}`));
-      }
-    });
-
-    proc.on('error', (err) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutTimer);
-      console.error(`[yt-dlp] Spawn error: ${err.message}`);
-      reject(new Error(`yt-dlp error: ${err.message}`));
-    });
-
-    proc.on('disconnect', () => {
-      console.log(`[yt-dlp] Process disconnected (PID: ${proc.pid})`);
-    });
-  });
+    throw err;
+  }
 }
 
 async function downloadWithYtdlCore(url, quality, outputPath, onProgress, startTime, endTime) {
