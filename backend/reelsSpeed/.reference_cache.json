@@ -36,5 +36,58 @@
       "thumbnail": "D:\\CutVideo\\backend\\reelsSpeed\\.thumbs\\WhatsApp Video 2026-07-02 at 14.43.32.jpg",
       "analyzedAt": 1783161697686
     }
+  },
+  "WhatsApp Video 2026-07-02 at 14.44.04.mp4": {
+    "mtimeMs": 1782999939217.256,
+    "analysis": {
+      "filename": "WhatsApp Video 2026-07-02 at 14.44.04.mp4",
+      "totalDuration": 15.075729,
+      "width": 478,
+      "height": 850,
+      "aspectRatio": "N/A",
+      "aspectTag": "vertical 9:16",
+      "avgShotDuration": 0.5798357307692308,
+      "shotDurations": [
+        1.38333,
+        1.5500000000000003,
+        1.5499999999999994,
+        2.1833400000000003,
+        2.9833300000000005,
+        0.40000000000000036,
+        0.033299999999998775,
+        0.03340000000000032,
+        0.03330000000000055,
+        0.033299999999998775,
+        0.03340000000000032,
+        0.03330000000000055,
+        0.09999999999999964,
+        0.03330000000000055,
+        0.0666999999999991,
+        0.03330000000000055,
+        0.03340000000000032,
+        0.03330000000000055,
+        0.033299999999998775,
+        0.03340000000000032,
+        0.03330000000000055,
+        0.033299999999998775,
+        0.5,
+        1.3834000000000017,
+        0.016599999999998616,
+        2.4924290000000013
+      ],
+      "cutsFrequency": 1.6582946005463484,
+      "editSpeed": "very fast",
+      "pacing": "very fast",
+      "movementIntensity": "high",
+      "sceneCount": 25,
+      "silenceRatio": 0,
+      "audioEnergy": 0.5,
+      "brightness": 128,
+      "contrast": 40,
+      "saturation": 1,
+      "hasAudio": true,
+      "thumbnail": "D:\\CutVideo\\backend\\reelsSpeed\\.thumbs\\WhatsApp Video 2026-07-02 at 14.44.04.jpg",
+      "analyzedAt": 1783283035543
+    }
   }
 }
