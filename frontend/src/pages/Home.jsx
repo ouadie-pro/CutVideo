@@ -117,6 +117,7 @@ export default function Home() {
               quality={quality}
               generator={reelsGenerator}
               selectedReference={referenceReels.selected}
+              referenceAnalysis={referenceReels.analysis}
             />
           </div>
         )}

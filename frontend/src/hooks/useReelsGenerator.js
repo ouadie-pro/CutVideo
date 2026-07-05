@@ -47,7 +47,7 @@ export function useReelsGenerator() {
     };
   }, []);
 
-  const generate = useCallback(async (url, count, reelDuration, quality, referenceFilename, captions = true, smartCrop = true) => {
+  const generate = useCallback(async (url, count, reelDuration, quality, referenceFilename, captions = true, smartCrop = true, referenceAnalysis = null) => {
     setState('generating');
     setProgress(0);
     setError(null);
@@ -62,7 +62,7 @@ export function useReelsGenerator() {
     try {
       let result;
       if (referenceFilename) {
-        result = await startReelsWithReference(url, count, reelDuration, quality, referenceFilename);
+        result = await startReelsWithReference(url, count, reelDuration, quality, referenceFilename, referenceAnalysis);
         if (result.referenceReel) {
           setReferenceInfo(result.referenceReel);
         }

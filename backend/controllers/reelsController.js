@@ -14,7 +14,7 @@ const TEMP_DIR = path.resolve(__dirname, '..', process.env.TEMP_DIR || './temp')
 
 exports.generateWithReference = async (req, res, next) => {
   try {
-    const { url, count, duration, quality, referenceFilename } = req.body;
+    const { url, count, duration, quality, referenceFilename, referenceAnalysis: bodyAnalysis } = req.body;
 
     if (!url || !count || !duration || !referenceFilename) {
       return res.status(400).json({ error: 'url, count, duration, and referenceFilename are required' });
@@ -28,7 +28,25 @@ exports.generateWithReference = async (req, res, next) => {
     const reelDuration = Math.min(Math.max(parseInt(duration) || 15, 15), 60);
 
     const referenceAnalysis = await referenceReelsService.analyzeReference(referenceFilename);
-    const metrics = referenceReelsService.getReferenceMetrics(referenceAnalysis);
+    let metrics = referenceReelsService.getReferenceMetrics(referenceAnalysis);
+
+    if (bodyAnalysis && typeof bodyAnalysis === 'object' && Object.keys(bodyAnalysis).length > 0) {
+      metrics = { ...metrics, ...bodyAnalysis };
+    }
+
+    const styleProfile = {
+      cutsPerMinute: Math.round((metrics.cutsFrequency || 0.3) * 60 * 100) / 100,
+      motionIntensity: metrics.movementIntensity === 'high' ? 80 : metrics.movementIntensity === 'low' ? 20 : 50,
+      audioEnergy: Math.round((metrics.audioEnergy || 0.5) * 100),
+      editSpeed: metrics.editSpeed || 'moderate'
+    };
+
+    const editOptions = {
+      captions: true,
+      smartCrop: true,
+      kenBurns: true,
+      loudnorm: true
+    };
 
     const jobId = crypto.randomUUID();
     const outputDir = path.join(TEMP_DIR, `reels_${jobId}`);
@@ -50,7 +68,9 @@ exports.generateWithReference = async (req, res, next) => {
       duration: reelDuration,
       quality,
       referenceFilename,
-      referenceAnalysis: metrics
+      referenceAnalysis: metrics,
+      styleProfile,
+      editOptions
     };
 
     jobs.set(jobId, job);
@@ -71,7 +91,7 @@ exports.generateWithReference = async (req, res, next) => {
 
 exports.generate = async (req, res, next) => {
   try {
-    const { url, count, duration, quality, captions, smartCrop } = req.body;
+    const { url, count, duration, quality, captions, smartCrop, styleProfile } = req.body;
 
     if (!url || !count || !duration) {
       return res.status(400).json({ error: 'url, count, and duration are required' });
@@ -103,6 +123,7 @@ exports.generate = async (req, res, next) => {
       count: reelCount,
       duration: reelDuration,
       quality,
+      styleProfile: styleProfile || null,
       editOptions: {
         captions: captions !== false,
         smartCrop: smartCrop !== false,
@@ -355,6 +376,8 @@ async function processJobWithReference(jobId) {
       reelDuration: job.duration,
       jobId: job.id,
       referenceAnalysis: job.referenceAnalysis,
+      styleProfile: job.styleProfile,
+      editOptions: job.editOptions,
       onProgress: (pct, step) => {
         job.progress = 20 + Math.round(pct * 0.70);
         job.step = step;

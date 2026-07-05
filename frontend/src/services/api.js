@@ -65,8 +65,8 @@ export async function analyzeReferenceReel(filename) {
   return data;
 }
 
-export async function startReelsWithReference(url, count, duration, quality, referenceFilename) {
-  const { data } = await api.post('/reels/generate-with-reference', { url, count, duration, quality, referenceFilename });
+export async function startReelsWithReference(url, count, duration, quality, referenceFilename, referenceAnalysis) {
+  const { data } = await api.post('/reels/generate-with-reference', { url, count, duration, quality, referenceFilename, referenceAnalysis });
   return data;
 }
 

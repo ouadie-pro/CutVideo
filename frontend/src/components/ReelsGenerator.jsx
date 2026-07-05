@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ProgressBar from './ProgressBar';
 import './ReelsGenerator.css';
 
-export default function ReelsGenerator({ url, quality, generator, selectedReference, referenceReels }) {
+export default function ReelsGenerator({ url, quality, generator, selectedReference, referenceAnalysis }) {
   const [reelCount, setReelCount] = useState(5);
   const [reelDuration, setReelDuration] = useState(15);
   const [captions, setCaptions] = useState(true);
@@ -16,7 +16,7 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
   const isIdle = state === 'idle';
 
   const handleGenerate = () => {
-    generate(url, reelCount, reelDuration, quality, selectedReference, captions, smartCrop);
+    generate(url, reelCount, reelDuration, quality, selectedReference, captions, smartCrop, referenceAnalysis);
   };
 
   return (
@@ -42,7 +42,45 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
 
       {isIdle && (
         <div className="reels-controls">
-          {selectedReference && (
+          {selectedReference && referenceAnalysis && (
+            <div className="reels-ref-summary">
+              <div className="reels-ref-summary-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                Template Style Analysis
+              </div>
+              <div className="reels-ref-summary-grid">
+                <div className="reels-ref-summary-item">
+                  <span className="reels-ref-summary-label">Edit Speed</span>
+                  <span className="reels-ref-summary-value">{referenceAnalysis.editSpeed || '—'}</span>
+                </div>
+                <div className="reels-ref-summary-item">
+                  <span className="reels-ref-summary-label">Motion</span>
+                  <span className="reels-ref-summary-value">{referenceAnalysis.movementIntensity || '—'}</span>
+                </div>
+                <div className="reels-ref-summary-item">
+                  <span className="reels-ref-summary-label">Avg Shot</span>
+                  <span className="reels-ref-summary-value">{referenceAnalysis.avgShotDuration ? referenceAnalysis.avgShotDuration.toFixed(1) + 's' : '—'}</span>
+                </div>
+                <div className="reels-ref-summary-item">
+                  <span className="reels-ref-summary-label">Total Cuts</span>
+                  <span className="reels-ref-summary-value">{referenceAnalysis.sceneCount ?? '—'}</span>
+                </div>
+                <div className="reels-ref-summary-item">
+                  <span className="reels-ref-summary-label">Brightness</span>
+                  <span className="reels-ref-summary-value">{referenceAnalysis.brightness != null ? referenceAnalysis.brightness.toFixed(0) : '—'}</span>
+                </div>
+                <div className="reels-ref-summary-item">
+                  <span className="reels-ref-summary-label">Contrast</span>
+                  <span className="reels-ref-summary-value">{referenceAnalysis.contrast != null ? referenceAnalysis.contrast.toFixed(0) : '—'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {selectedReference && !referenceAnalysis && (
             <div className="reels-ref-notice">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                 <circle cx="12" cy="12" r="10" />
@@ -122,12 +160,25 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
 
       {isGenerating && (
         <div className="reels-generating">
-          {referenceInfo && (
+          {referenceAnalysis && (
             <div className="reels-ref-generating-info">
-              Using template: {referenceInfo.filename}
-              {referenceInfo.avgShotDuration && (
-                <span className="reels-ref-metric">Avg cut: {referenceInfo.avgShotDuration.toFixed(1)}s</span>
-              )}
+              <div className="reels-ref-generating-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                  <polygon points="23 7 16 12 23 17 23 7" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+                Using template: {referenceAnalysis.filename || selectedReference}
+              </div>
+              <div className="reels-ref-generating-metrics">
+                <span className="reels-ref-metric-tag">{referenceAnalysis.editSpeed || '—'} edit</span>
+                <span className="reels-ref-metric-tag">{referenceAnalysis.movementIntensity || '—'} motion</span>
+                {referenceAnalysis.avgShotDuration && (
+                  <span className="reels-ref-metric-tag">avg {referenceAnalysis.avgShotDuration.toFixed(1)}s</span>
+                )}
+                {referenceAnalysis.sceneCount != null && (
+                  <span className="reels-ref-metric-tag">{referenceAnalysis.sceneCount} cuts</span>
+                )}
+              </div>
             </div>
           )}
           <ProgressBar progress={progress} step={step} />
@@ -143,12 +194,19 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
 
       {isComplete && reels.length > 0 && (
         <div className="reels-complete">
-          {referenceInfo && (
+          {(referenceAnalysis || referenceInfo) && (
             <div className="reels-ref-result-header">
               <div className="reels-ref-col">
-                <span className="reels-ref-label">Reference Reel</span>
-                <span className="reels-ref-name">{referenceInfo.filename}</span>
-                {referenceInfo.avgShotDuration && (
+                <span className="reels-ref-label">Reference</span>
+                <span className="reels-ref-name">{referenceInfo?.filename || referenceAnalysis?.filename || selectedReference}</span>
+                {referenceAnalysis && (
+                  <div className="reels-ref-result-metrics">
+                    {referenceAnalysis.editSpeed && <span className="reels-ref-metric-tag">{referenceAnalysis.editSpeed}</span>}
+                    {referenceAnalysis.movementIntensity && <span className="reels-ref-metric-tag">{referenceAnalysis.movementIntensity}</span>}
+                    {referenceAnalysis.avgShotDuration && <span className="reels-ref-metric-tag">{referenceAnalysis.avgShotDuration.toFixed(1)}s avg</span>}
+                  </div>
+                )}
+                {referenceInfo?.avgShotDuration && !referenceAnalysis && (
                   <span className="reels-ref-metric">avg cut {referenceInfo.avgShotDuration.toFixed(1)}s</span>
                 )}
               </div>
@@ -159,7 +217,7 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
                 </svg>
               </div>
               <div className="reels-ref-col">
-                <span className="reels-ref-label">Generated Reels</span>
+                <span className="reels-ref-label">Generated</span>
                 <span className="reels-ref-value">{reels.length} reel{reels.length !== 1 ? 's' : ''}</span>
                 <span className="reels-ref-metric">styled after template</span>
               </div>
