@@ -1179,15 +1179,16 @@ function packageAsZip(reels, outputPath) {
   });
 }
 
-function matchHighlightsToReference(totalDuration, scenes, silences, motionScores, audioBeats, reference, count, reelDuration, styleProfile, transcript) {
-  const refSceneDensity = reference.cutsFrequency || 0.3;
+function matchHighlightsToReference(totalDuration, scenes, silences, motionScores, audioBeats, reference, count, reelDuration) {
+  const refAvgShot = reference.avgShotDuration || 2;
   const refAudioEnergy = reference.audioEnergy || 0.5;
+  const refSceneDensity = reference.cutsFrequency || 0.3;
 
-  const candidates = [];
   const step = Math.max(1, Math.floor(totalDuration / 150));
-
   const introEnd = totalDuration * 0.08;
   const creditsStart = totalDuration * 0.92;
+
+  const candidates = [];
 
   for (let start = introEnd; start + reelDuration <= creditsStart; start += step) {
     const end = start + reelDuration;
@@ -1197,8 +1198,8 @@ function matchHighlightsToReference(totalDuration, scenes, silences, motionScore
     const densityScore = 10 * (1 - Math.abs(candidateDensity - refSceneDensity) / Math.max(refSceneDensity, 0.01));
 
     const windowMotion = motionScores.filter(m => m.time >= start && m.time <= end);
-    const avgMotion = windowMotion.length > 0
-      ? windowMotion.reduce((a, m) => a + m.score, 0) / windowMotion.length
+    const avgMotion = windowMotion.length > 0 
+      ? windowMotion.reduce((a, m) => a + m.score, 0) / windowMotion.length 
       : 0;
     const motionScore = avgMotion * 30;
 
@@ -1209,48 +1210,38 @@ function matchHighlightsToReference(totalDuration, scenes, silences, motionScore
       .filter(s => s.start < end && s.end > start)
       .reduce((a, s) => a + Math.min(s.end, end) - Math.max(s.start, start), 0);
     const silenceRatio = silDur / reelDuration;
-    let silenceScore = -25 * silenceRatio;
+    const silenceScore = -25 * silenceRatio;
     if (silenceRatio > 0.5) silenceScore -= 15;
 
-    const mid = (start + end / 2) / totalDuration;
-    const centerScore = 5 * (1 - Math.abs(mid - 0.5) * 2);
+    const mid = (start + end) / 2;
+    const centerScore = 5 * (1 - Math.abs(mid / totalDuration - 0.5) * 2);
 
     const sceneBonus = windowScenes.length >= 1 ? 5 : -10;
     const motionBonus = avgMotion > 0.2 ? 8 : 0;
     const beatsBonus = windowBeats.length >= 2 ? 5 : 0;
 
-    let styleScore = 0;
-    if (styleProfile) {
-      if (styleProfile.cutsPerMinute != null && windowScenes.length > 0) {
-        const localCutsPerMin = (windowScenes.length / reelDuration) * 60;
-        const cutDiff = Math.abs(localCutsPerMin - styleProfile.cutsPerMinute);
-        const maxCutDiff = Math.max(styleProfile.cutsPerMinute, 1);
-        styleScore += 20 * (1 - Math.min(1, cutDiff / maxCutDiff));
-      }
-      if (styleProfile.motionIntensity != null && avgMotion > 0) {
-        const localMotion = avgMotion * 100;
-        const motionDiff = Math.abs(localMotion - styleProfile.motionIntensity);
-        styleScore += 15 * (1 - Math.min(1, motionDiff / Math.max(styleProfile.motionIntensity, 10)));
-      }
+    let styleBonus = 0;
+    if (reference.editSpeed === 'very fast' || reference.editSpeed === 'fast') {
+      styleBonus += windowScenes.length >= 3 ? 10 : 0;
+    } else if (reference.editSpeed === 'slow' || reference.editSpeed === 'very slow') {
+      styleBonus += windowScenes.length <= 2 ? 5 : 0;
     }
 
     candidates.push({
       start: Math.max(0, start),
       end: Math.min(totalDuration, end),
-      score: densityScore + silenceScore + centerScore + sceneBonus + motionScore + beatsScore + motionBonus + beatsBonus + styleScore
+      score: densityScore + silenceScore + centerScore + sceneBonus + motionScore + beatsScore + motionBonus + beatsBonus + styleBonus,
+      sceneCount: windowScenes.length,
+      avgMotion,
+      beatCount: windowBeats.length
     });
   }
 
-  if (transcript && transcript.segments && transcript.segments.length > 0) {
-    const scored = lexicalHighlightService.addTranscriptBonusToCandidates(candidates, transcript.segments, reelDuration);
-    candidates.length = 0;
-    candidates.push(...scored);
-  } else {
-    candidates.sort((a, b) => b.score - a.score);
-  }
+  candidates.sort((a, b) => b.score - a.score);
 
   const selected = [];
   const minGap = reelDuration * 0.6;
+
   for (const c of candidates) {
     if (selected.length >= count) break;
     if (!selected.some(s => Math.abs(s.start - c.start) < minGap)) {
@@ -1389,35 +1380,17 @@ async function generateReelsWithReference(options) {
 
   if (!highlights) {
     highlights = matchHighlightsToReference(
-      totalDuration, scenes, silences, motionScores, audioBeats, referenceAnalysis, count, reelDuration, styleProfile, transcript
+      totalDuration, scenes, silences, motionScores, audioBeats, referenceAnalysis, count, reelDuration
     );
   }
 
   if (highlights.length === 0) {
     const mid = totalDuration / 2;
-    const clipStart = Math.max(0, mid - reelDuration / 2);
-    const reelPath = path.resolve(outputDir, 'reel_1.mp4');
-    const thumbPath = path.resolve(outputDir, 'thumb_1.jpg');
-
-    const clipEditOpts = {};
-    if (fullCropPath) {
-      clipEditOpts.cropPath = sliceCropPath(fullCropPath, clipStart, reelDuration);
-    }
-    clipEditOpts.kenBurns = getKenBurnsZoom(styleProfile, reelDuration, scenes, clipStart);
-    clipEditOpts.loudnorm = !editOptions || editOptions.loudnorm !== false;
-
-    if (transcript && (!editOptions || editOptions.captions !== false)) {
-      const assPath = path.resolve(outputDir, 'captions_1.ass');
-      const captionResult = await captionService.generateCaptionFile(transcript, assPath, { start: clipStart, end: clipStart + reelDuration });
-      if (captionResult) {
-        clipEditOpts.assPath = captionResult;
-      }
-    }
-
-    await createVerticalClip(videoPath, reelPath, clipStart, reelDuration, null, clipEditOpts);
-    let thumbnail = null;
-    try { const r = await extractThumbnail(reelPath, thumbPath); if (r && fs.existsSync(thumbPath)) thumbnail = thumbPath; } catch {}
-    return [{ index: 1, path: reelPath, thumbnail, filename: 'reel_1.mp4', startTime: clipStart }];
+    highlights.push({
+      start: Math.max(0, mid - reelDuration / 2),
+      end: Math.min(totalDuration, mid + reelDuration / 2),
+      score: 0
+    });
   }
 
   highlights = highlights.map(h => ({
@@ -1431,6 +1404,8 @@ async function generateReelsWithReference(options) {
     const h = highlights[i];
     const idx = i + 1;
 
+    const actualDuration = Math.min(reelDuration, h.end - h.start);
+
     onProgress(Math.round((i / highlights.length) * 100), `creating reel ${idx}/${count}`);
 
     const startTime = h.start;
@@ -1441,7 +1416,7 @@ async function generateReelsWithReference(options) {
       const clipEditOpts = {};
 
       if (fullCropPath) {
-        clipEditOpts.cropPath = sliceCropPath(fullCropPath, startTime, reelDuration);
+        clipEditOpts.cropPath = sliceCropPath(fullCropPath, startTime, actualDuration);
       }
 
       clipEditOpts.kenBurns = getKenBurnsZoom(styleProfile, reelDuration, scenes, startTime);
@@ -1451,13 +1426,13 @@ async function generateReelsWithReference(options) {
       let assPath = null;
       if (transcript && (!editOptions || editOptions.captions !== false)) {
         assPath = path.resolve(outputDir, `captions_${idx}.ass`);
-        const captionResult = await captionService.generateCaptionFile(transcript, assPath, { start: startTime, end: startTime + reelDuration });
+        const captionResult = await captionService.generateCaptionFile(transcript, assPath, { start: startTime, end: startTime + actualDuration });
         if (captionResult) {
           clipEditOpts.assPath = captionResult;
         }
       }
 
-      await createVerticalClip(videoPath, reelPath, startTime, reelDuration, null, clipEditOpts);
+      await createVerticalClip(videoPath, reelPath, startTime, actualDuration, null, clipEditOpts);
 
       if (!fs.existsSync(reelPath)) {
         throw new Error(`Output file not found after encoding: ${reelPath}`);
@@ -1493,6 +1468,19 @@ async function generateReelsWithReference(options) {
 
   if (results.length === 0) {
     throw new Error('No reels could be generated from reference matching');
+  }
+
+  if (results.length > 1) {
+    try {
+      onProgress(90, 'compressing');
+      const zipPath = path.join(outputDir, `reels_${path.basename(outputDir)}.zip`);
+      await packageAsZip(results, zipPath);
+      if (fs.existsSync(zipPath)) {
+        results._zipPath = zipPath;
+      }
+    } catch (zipErr) {
+      console.error(`ZIP creation failed, continuing without ZIP:`, zipErr.message);
+    }
   }
 
   onProgress(100, 'finalizing');

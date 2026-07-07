@@ -14,7 +14,7 @@ const TEMP_DIR = path.resolve(__dirname, '..', process.env.TEMP_DIR || './temp')
 
 exports.generateWithReference = async (req, res, next) => {
   try {
-    const { url, count, duration, quality, referenceFilename, referenceAnalysis: bodyAnalysis } = req.body;
+    const { url, count, duration, quality, referenceFilename, referenceAnalysis: clientAnalysis } = req.body;
 
     if (!url || !count || !duration || !referenceFilename) {
       return res.status(400).json({ error: 'url, count, duration, and referenceFilename are required' });
@@ -27,18 +27,26 @@ exports.generateWithReference = async (req, res, next) => {
     const reelCount = Math.min(Math.max(parseInt(count) || 1, 1), 20);
     const reelDuration = Math.min(Math.max(parseInt(duration) || 15, 15), 60);
 
-    const referenceAnalysis = await referenceReelsService.analyzeReference(referenceFilename);
-    let metrics = referenceReelsService.getReferenceMetrics(referenceAnalysis);
+    let referenceAnalysis;
+    let metrics;
 
-    if (bodyAnalysis && typeof bodyAnalysis === 'object' && Object.keys(bodyAnalysis).length > 0) {
-      metrics = { ...metrics, ...bodyAnalysis };
+    if (clientAnalysis && typeof clientAnalysis === 'object' && clientAnalysis.avgShotDuration) {
+      referenceAnalysis = clientAnalysis;
+      metrics = referenceReelsService.getReferenceMetrics(referenceAnalysis);
+    } else {
+      referenceAnalysis = await referenceReelsService.analyzeReference(referenceFilename);
+      metrics = referenceReelsService.getReferenceMetrics(referenceAnalysis);
     }
 
     const styleProfile = {
-      cutsPerMinute: Math.round((metrics.cutsFrequency || 0.3) * 60 * 100) / 100,
-      motionIntensity: metrics.movementIntensity === 'high' ? 80 : metrics.movementIntensity === 'low' ? 20 : 50,
-      audioEnergy: Math.round((metrics.audioEnergy || 0.5) * 100),
-      editSpeed: metrics.editSpeed || 'moderate'
+      avgShotDurationSec: metrics.avgShotDuration,
+      cutsPerMinute: metrics.cutsFrequency ? metrics.cutsFrequency * 60 : null,
+      motionIntensity: metrics.movementIntensity === 'high' ? 80 : metrics.movementIntensity === 'medium' ? 50 : 20,
+      audioEnergy: metrics.audioEnergy,
+      editSpeed: metrics.editSpeed,
+      brightness: metrics.brightness,
+      contrast: metrics.contrast,
+      captions: { present: false, position: 'bottom' }
     };
 
     const editOptions = {
@@ -374,6 +382,7 @@ async function processJobWithReference(jobId) {
       outputDir: job.outputDir,
       count: job.count,
       reelDuration: job.duration,
+      quality: job.quality,
       jobId: job.id,
       referenceAnalysis: job.referenceAnalysis,
       styleProfile: job.styleProfile,
@@ -386,24 +395,13 @@ async function processJobWithReference(jobId) {
 
     job.reels = reels.map(r => ({ ...r, downloaded: false }));
 
+    if (reels._zipPath && fs.existsSync(reels._zipPath)) {
+      job.zipPath = reels._zipPath;
+    }
+
     for (const reel of reels) {
       if (!fs.existsSync(reel.path)) {
         console.error(`Reel ${reel.index} missing at ${reel.path}`);
-      }
-    }
-
-    if (reels.length > 1) {
-      try {
-        console.log(`Reference reel job ${jobId}: Creating ZIP`);
-        job.progress = 90;
-        job.step = 'compressing';
-        const zipPath = path.join(job.outputDir, `reels_${job.id}.zip`);
-        await reelsService.packageAsZip(reels, zipPath);
-        if (fs.existsSync(zipPath)) {
-          job.zipPath = zipPath;
-        }
-      } catch (zipErr) {
-        console.error(`Reference reel job ${jobId}: ZIP creation failed, continuing without ZIP:`, zipErr.message);
       }
     }
 

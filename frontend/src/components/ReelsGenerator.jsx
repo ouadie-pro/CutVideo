@@ -2,6 +2,31 @@ import { useState } from 'react';
 import ProgressBar from './ProgressBar';
 import './ReelsGenerator.css';
 
+function MetricBadge({ label, value, color }) {
+  return (
+    <div style={{
+      background: 'rgba(99, 102, 241, 0.06)',
+      borderRadius: '6px',
+      padding: '8px 10px',
+      border: '1px solid rgba(99, 102, 241, 0.1)'
+    }}>
+      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: '0.85rem',
+        fontWeight: 700,
+        color: color || 'var(--text-primary)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
 export default function ReelsGenerator({ url, quality, generator, selectedReference, referenceAnalysis }) {
   const [reelCount, setReelCount] = useState(5);
   const [reelDuration, setReelDuration] = useState(15);
@@ -43,41 +68,104 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
       {isIdle && (
         <div className="reels-controls">
           {selectedReference && referenceAnalysis && (
-            <div className="reels-ref-summary">
-              <div className="reels-ref-summary-header">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-                Template Style Analysis
+            <div className="reels-ref-analysis-card" style={{
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '16px',
+              border: '1px solid var(--border)',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '12px'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, var(--accent), #7c3aed)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2" />
+                    <line x1="7" y1="2" x2="7" y2="22" />
+                    <line x1="17" y1="2" x2="17" y2="22" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {selectedReference?.length > 25 ? selectedReference.slice(0, 22) + '...' : selectedReference}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Template Style Profile
+                  </div>
+                </div>
               </div>
-              <div className="reels-ref-summary-grid">
-                <div className="reels-ref-summary-item">
-                  <span className="reels-ref-summary-label">Edit Speed</span>
-                  <span className="reels-ref-summary-value">{referenceAnalysis.editSpeed || '—'}</span>
-                </div>
-                <div className="reels-ref-summary-item">
-                  <span className="reels-ref-summary-label">Motion</span>
-                  <span className="reels-ref-summary-value">{referenceAnalysis.movementIntensity || '—'}</span>
-                </div>
-                <div className="reels-ref-summary-item">
-                  <span className="reels-ref-summary-label">Avg Shot</span>
-                  <span className="reels-ref-summary-value">{referenceAnalysis.avgShotDuration ? referenceAnalysis.avgShotDuration.toFixed(1) + 's' : '—'}</span>
-                </div>
-                <div className="reels-ref-summary-item">
-                  <span className="reels-ref-summary-label">Total Cuts</span>
-                  <span className="reels-ref-summary-value">{referenceAnalysis.sceneCount ?? '—'}</span>
-                </div>
-                <div className="reels-ref-summary-item">
-                  <span className="reels-ref-summary-label">Brightness</span>
-                  <span className="reels-ref-summary-value">{referenceAnalysis.brightness != null ? referenceAnalysis.brightness.toFixed(0) : '—'}</span>
-                </div>
-                <div className="reels-ref-summary-item">
-                  <span className="reels-ref-summary-label">Contrast</span>
-                  <span className="reels-ref-summary-value">{referenceAnalysis.contrast != null ? referenceAnalysis.contrast.toFixed(0) : '—'}</span>
-                </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '8px'
+              }}>
+                <MetricBadge
+                  label="Edit Speed"
+                  value={referenceAnalysis.editSpeed || 'Unknown'}
+                  color={referenceAnalysis.editSpeed?.includes('fast') ? '#22c55e' : '#f59e0b'}
+                />
+                <MetricBadge
+                  label="Motion"
+                  value={referenceAnalysis.movementIntensity || 'Unknown'}
+                />
+                <MetricBadge
+                  label="Avg Cut"
+                  value={`${(referenceAnalysis.avgShotDuration || 0).toFixed(1)}s`}
+                />
+                <MetricBadge
+                  label="Cuts"
+                  value={`${referenceAnalysis.sceneCount || 0} scenes`}
+                />
+                <MetricBadge
+                  label="Duration"
+                  value={`${Math.round(referenceAnalysis.totalDuration || 0)}s`}
+                />
+                <MetricBadge
+                  label="Audio"
+                  value={`${Math.round((referenceAnalysis.audioEnergy || 0) * 100)}%`}
+                />
               </div>
+
+              {referenceAnalysis.shotDurations && referenceAnalysis.shotDurations.length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Shot Rhythm
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    gap: '4px',
+                    alignItems: 'flex-end',
+                    height: '32px'
+                  }}>
+                    {referenceAnalysis.shotDurations.slice(0, 8).map((dur, i) => {
+                      const maxDur = Math.max(...referenceAnalysis.shotDurations.slice(0, 8));
+                      const heightPct = maxDur > 0 ? (dur / maxDur) * 100 : 50;
+                      return (
+                        <div key={i} style={{
+                          flex: 1,
+                          height: `${heightPct}%`,
+                          background: 'linear-gradient(to top, var(--accent), #7c3aed)',
+                          borderRadius: '2px',
+                          minHeight: '4px',
+                          position: 'relative'
+                        }} title={`${dur.toFixed(1)}s`} />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {selectedReference && !referenceAnalysis && (
@@ -160,23 +248,26 @@ export default function ReelsGenerator({ url, quality, generator, selectedRefere
 
       {isGenerating && (
         <div className="reels-generating">
-          {referenceAnalysis && (
+          {(referenceInfo || referenceAnalysis) && (
             <div className="reels-ref-generating-info">
-              <div className="reels-ref-generating-header">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                  <polygon points="23 7 16 12 23 17 23 7" />
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                </svg>
-                Using template: {referenceAnalysis.filename || selectedReference}
-              </div>
-              <div className="reels-ref-generating-metrics">
-                <span className="reels-ref-metric-tag">{referenceAnalysis.editSpeed || '—'} edit</span>
-                <span className="reels-ref-metric-tag">{referenceAnalysis.movementIntensity || '—'} motion</span>
-                {referenceAnalysis.avgShotDuration && (
-                  <span className="reels-ref-metric-tag">avg {referenceAnalysis.avgShotDuration.toFixed(1)}s</span>
+              <span style={{ fontWeight: 600 }}>
+                Using template: {(referenceInfo?.filename || selectedReference)}
+              </span>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {(referenceInfo?.avgShotDuration || referenceAnalysis?.avgShotDuration) && (
+                  <span className="reels-ref-metric">
+                    Avg cut: {(referenceInfo?.avgShotDuration || referenceAnalysis?.avgShotDuration).toFixed(1)}s
+                  </span>
                 )}
-                {referenceAnalysis.sceneCount != null && (
-                  <span className="reels-ref-metric-tag">{referenceAnalysis.sceneCount} cuts</span>
+                {referenceAnalysis?.editSpeed && (
+                  <span className="reels-ref-metric">
+                    Pace: {referenceAnalysis.editSpeed}
+                  </span>
+                )}
+                {referenceAnalysis?.movementIntensity && (
+                  <span className="reels-ref-metric">
+                    Motion: {referenceAnalysis.movementIntensity}
+                  </span>
                 )}
               </div>
             </div>
